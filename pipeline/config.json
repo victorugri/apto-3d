@@ -1,0 +1,28 @@
+{
+  "tools": {
+    "ffmpeg": "ffmpeg",
+    "ffprobe": "ffprobe",
+    "colmap": "colmap",
+    "brush": "brush"
+  },
+  "frames": {
+    "sample_fps": 4,
+    "max_frames": 260,
+    "long_side": 1600,
+    "min_sharpness_ratio": 0.35
+  },
+  "colmap": {
+    "camera_model": "OPENCV",
+    "matcher": "auto",
+    "exhaustive_max_images": 320,
+    "sequential_overlap": 20,
+    "use_gpu": true,
+    "orientation": "IMAGE-ORIENTATION"
+  },
+  "train": {
+    "steps": 30000,
+    "max_resolution": 1600,
+    "extra_args": [],
+    "command": ""
+  }
+}

@@ -1,0 +1,16 @@
+work/*
+!work/.gitkeep
+capturas/**/*.mov
+capturas/**/*.mp4
+capturas/**/*.usdz
+capturas/**/*.spz
+capturas/**/*.ply
+site/assets/splats/*
+!site/assets/splats/.gitkeep
+site/assets/*.usdz
+site/assets/*.glb
+!site/assets/planta-*.glb
+site/data/*
+!site/data/.gitkeep
+__pycache__/
+*.pyc

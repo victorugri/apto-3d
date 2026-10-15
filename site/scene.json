@@ -1,0 +1,278 @@
+{
+  "models": [
+    {
+      "id": "planta-final01",
+      "name": "Planta do manual: final 01",
+      "url": "assets/planta-final01.glb",
+      "source": "planta",
+      "rooms": [
+        {
+          "name": "Sacada da suíte master",
+          "x": 4.592,
+          "z": 0.68,
+          "lx": 6.76,
+          "lz": 0.68,
+          "area": 2.55
+        },
+        {
+          "name": "Suíte master",
+          "x": 5.235,
+          "z": 4.16,
+          "lx": 5.235,
+          "lz": 1.35,
+          "area": 11.16
+        },
+        {
+          "name": "Closet",
+          "x": 4.645,
+          "z": 6.84,
+          "lx": 4.645,
+          "lz": 4.76,
+          "area": 5.38
+        },
+        {
+          "name": "Banho da suíte master",
+          "x": 7.43,
+          "z": 2.0,
+          "lx": 9.51,
+          "lz": 2.0,
+          "area": 4.89
+        },
+        {
+          "name": "Suíte 2",
+          "x": 8.21,
+          "z": 6.2,
+          "lx": 8.21,
+          "lz": 3.1,
+          "area": 9.62
+        },
+        {
+          "name": "Banho da suíte 2",
+          "x": 7.43,
+          "z": 7.61,
+          "lx": 9.51,
+          "lz": 7.61,
+          "area": 3.38
+        },
+        {
+          "name": "Banho da suíte 1",
+          "x": 7.43,
+          "z": 9.055,
+          "lx": 9.51,
+          "lz": 9.055,
+          "area": 3.41
+        },
+        {
+          "name": "Hall íntimo",
+          "x": 3.932,
+          "z": 8.285,
+          "lx": 5.82,
+          "lz": 8.285,
+          "area": 7.37
+        },
+        {
+          "name": "Hall de entrada",
+          "x": 2.91,
+          "z": 8.154,
+          "lx": 2.91,
+          "lz": 6.57,
+          "area": 2.18
+        },
+        {
+          "name": "Sala",
+          "x": 1.885,
+          "z": 14.94,
+          "lx": 1.885,
+          "lz": 8.55,
+          "area": 27.54
+        },
+        {
+          "name": "Suíte 1",
+          "x": 6.394,
+          "z": 11.255,
+          "lx": 8.77,
+          "lz": 11.255,
+          "area": 13.54
+        },
+        {
+          "name": "Lavabo",
+          "x": 4.96,
+          "z": 14.094,
+          "lx": 4.96,
+          "lz": 12.79,
+          "area": 2.15
+        },
+        {
+          "name": "Área de serviço",
+          "x": 6.36,
+          "z": 13.595,
+          "lx": 8.77,
+          "lz": 13.595,
+          "area": 4.85
+        },
+        {
+          "name": "Sacada da suíte 1",
+          "x": 9.4,
+          "z": 13.77,
+          "lx": 9.4,
+          "lz": 9.94,
+          "area": 4.43
+        },
+        {
+          "name": "Cozinha",
+          "x": 6.36,
+          "z": 16.735,
+          "lx": 9.52,
+          "lz": 16.735,
+          "area": 12.19
+        },
+        {
+          "name": "Varanda gourmet",
+          "x": 0.91,
+          "z": 17.05,
+          "lx": 5.61,
+          "lz": 17.05,
+          "area": 13.14
+        }
+      ]
+    },
+    {
+      "id": "planta-final02",
+      "name": "Planta do manual: final 02",
+      "url": "assets/planta-final02.glb",
+      "source": "planta",
+      "rooms": [
+        {
+          "name": "Sacada da suíte master",
+          "x": 5.528,
+          "z": 0.68,
+          "lx": 3.36,
+          "lz": 0.68,
+          "area": 2.55
+        },
+        {
+          "name": "Suíte master",
+          "x": 4.885,
+          "z": 4.16,
+          "lx": 4.885,
+          "lz": 1.35,
+          "area": 11.16
+        },
+        {
+          "name": "Closet",
+          "x": 5.475,
+          "z": 6.84,
+          "lx": 5.475,
+          "lz": 4.76,
+          "area": 5.38
+        },
+        {
+          "name": "Banho da suíte master",
+          "x": 2.69,
+          "z": 2.0,
+          "lx": 0.61,
+          "lz": 2.0,
+          "area": 4.89
+        },
+        {
+          "name": "Suíte 2",
+          "x": 1.91,
+          "z": 6.2,
+          "lx": 1.91,
+          "lz": 3.1,
+          "area": 9.62
+        },
+        {
+          "name": "Banho da suíte 2",
+          "x": 2.69,
+          "z": 7.61,
+          "lx": 0.61,
+          "lz": 7.61,
+          "area": 3.38
+        },
+        {
+          "name": "Banho da suíte 1",
+          "x": 2.69,
+          "z": 9.055,
+          "lx": 0.61,
+          "lz": 9.055,
+          "area": 3.41
+        },
+        {
+          "name": "Hall íntimo",
+          "x": 6.188,
+          "z": 8.285,
+          "lx": 4.3,
+          "lz": 8.285,
+          "area": 7.37
+        },
+        {
+          "name": "Hall de entrada",
+          "x": 7.21,
+          "z": 8.154,
+          "lx": 7.21,
+          "lz": 6.57,
+          "area": 2.18
+        },
+        {
+          "name": "Sala",
+          "x": 8.235,
+          "z": 14.94,
+          "lx": 8.235,
+          "lz": 8.55,
+          "area": 27.54
+        },
+        {
+          "name": "Suíte 1",
+          "x": 3.726,
+          "z": 11.255,
+          "lx": 1.35,
+          "lz": 11.255,
+          "area": 13.54
+        },
+        {
+          "name": "Lavabo",
+          "x": 5.16,
+          "z": 14.094,
+          "lx": 5.16,
+          "lz": 12.79,
+          "area": 2.15
+        },
+        {
+          "name": "Área de serviço",
+          "x": 3.76,
+          "z": 13.595,
+          "lx": 1.35,
+          "lz": 13.595,
+          "area": 4.85
+        },
+        {
+          "name": "Sacada da suíte 1",
+          "x": 0.72,
+          "z": 13.77,
+          "lx": 0.72,
+          "lz": 9.94,
+          "area": 4.43
+        },
+        {
+          "name": "Cozinha",
+          "x": 3.76,
+          "z": 16.735,
+          "lx": 0.6,
+          "lz": 16.735,
+          "area": 12.19
+        },
+        {
+          "name": "Varanda gourmet",
+          "x": 9.21,
+          "z": 17.05,
+          "lx": 4.51,
+          "lz": 17.05,
+          "area": 13.14
+        }
+      ]
+    }
+  ],
+  "model": "planta-final01",
+  "splats": []
+}

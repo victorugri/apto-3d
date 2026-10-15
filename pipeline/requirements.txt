@@ -1,0 +1,5 @@
+opencv-python-headless>=4.8
+numpy>=1.24
+# opcionais: só para converter o USDZ em GLB (pipeline/model.py --glb)
+usd-core>=24.0
+trimesh>=4.0

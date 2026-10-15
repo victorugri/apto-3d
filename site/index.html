@@ -1,0 +1,2000 @@
+<title>Apê 3D</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one-screen tool — top bar, tool rail at left, 3D stage in the middle, inspector at right; on phones the rail and the inspector stack under the stage. */
+:root {
+  --bg: #eceeea;          /* concrete, slightly green */
+  --panel: #f8f9f6;
+  --stage: #dde1dc;
+  --ink: #1d2320;
+  --muted: #5f6964;
+  --line: #d2d7d1;
+  --accent: #d39a17;      /* fita de trena */
+  --accent-ink: #251a02;
+  --accent-soft: #f6e6bd;
+  --danger: #b4412f;
+  --ok: #3d7a52;
+  --shadow: 0 6px 24px rgba(20, 26, 23, .14);
+  --font-ui: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --font-num: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --r: 8px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #131715; --panel: #1b201e; --stage: #0e1110; --ink: #e5e9e5; --muted: #98a29c; --line: #2c3430;
+    --accent: #e8b33a; --accent-ink: #1d1502; --accent-soft: #3b3018; --danger: #e0715c; --ok: #6fbf8a;
+    --shadow: 0 6px 24px rgba(0, 0, 0, .45); color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #131715; --panel: #1b201e; --stage: #0e1110; --ink: #e5e9e5; --muted: #98a29c; --line: #2c3430;
+  --accent: #e8b33a; --accent-ink: #1d1502; --accent-soft: #3b3018; --danger: #e0715c; --ok: #6fbf8a;
+  --shadow: 0 6px 24px rgba(0, 0, 0, .45); color-scheme: dark;
+}
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-ui); font-size: 14px; overflow: hidden; }
+* { box-sizing: border-box; }
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+#app { height: 100%; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: 60px minmax(0, 1fr) 330px;
+  grid-template-areas: "bar bar bar" "tools stage panel"; }
+
+/* ---------- top bar ---------- */
+.bar { grid-area: bar; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding-block: 8px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  border-bottom: 1px solid var(--line); background: var(--panel); }
+.brand { display: flex; align-items: baseline; gap: 8px; margin-right: auto; }
+.brand b { font-size: 17px; font-weight: 700; letter-spacing: -.01em; }
+.brand span { font-family: var(--font-num); font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; background: var(--bg); }
+.seg button { border: 0; background: none; padding: 6px 11px; cursor: pointer; color: var(--muted); font-weight: 500; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--panel); }
+.bar select { border: 1px solid var(--line); border-radius: var(--r); background: var(--bg); padding: 6px 8px; max-width: 160px; }
+.iconbtn { border: 1px solid var(--line); background: var(--bg); border-radius: var(--r); padding: 6px 10px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+.iconbtn:hover { border-color: var(--muted); }
+.iconbtn svg { width: 16px; height: 16px; }
+
+/* ---------- tool rail ---------- */
+.tools { grid-area: tools; display: flex; flex-direction: column; gap: 4px; padding: 10px 6px; border-right: 1px solid var(--line); background: var(--panel); }
+.tool { display: flex; flex-direction: column; align-items: center; gap: 3px; border: 0; background: none; border-radius: var(--r); padding: 8px 2px; cursor: pointer; color: var(--muted); font-size: 10.5px; font-weight: 600; letter-spacing: .02em; }
+.tool svg { width: 22px; height: 22px; }
+.tool:hover { background: var(--bg); color: var(--ink); }
+.tool[aria-pressed="true"] { background: var(--accent-soft); color: var(--ink); box-shadow: inset 3px 0 0 var(--accent); }
+.tools .sep { height: 1px; background: var(--line); margin: 6px 4px; }
+
+/* ---------- stage ---------- */
+.stage { grid-area: stage; position: relative; background: var(--stage); min-width: 0; min-height: 0; overflow: hidden; touch-action: none; }
+#view { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.hint { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); max-width: calc(100% - 32px); background: var(--panel); border: 1px solid var(--line);
+  box-shadow: var(--shadow); border-radius: 999px; padding: 7px 14px; font-size: 13px; pointer-events: none; text-align: center; text-wrap: balance; }
+.hint:empty { display: none; }
+.banner { position: absolute; left: 12px; bottom: 12px; right: 12px; max-width: 560px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r);
+  box-shadow: var(--shadow); padding: 12px 14px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.banner p { margin: 0; flex: 1 1 260px; color: var(--muted); line-height: 1.45; }
+.banner p b { color: var(--ink); }
+.measure-label { position: absolute; transform: translate(-50%, -130%); background: var(--accent); color: var(--accent-ink); font-family: var(--font-num); font-weight: 500;
+  font-size: 13px; padding: 3px 8px; border-radius: 4px; pointer-events: none; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.toast { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); background: var(--ink); color: var(--panel); padding: 8px 14px; border-radius: var(--r);
+  font-size: 13px; box-shadow: var(--shadow); max-width: calc(100% - 32px); text-align: center; }
+.progress { position: absolute; top: 56px; left: 50%; transform: translateX(-50%); background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 8px 12px;
+  font-family: var(--font-num); font-size: 12px; box-shadow: var(--shadow); }
+.drop { position: absolute; inset: 10px; border: 2px dashed var(--accent); border-radius: 14px; background: color-mix(in srgb, var(--panel) 80%, transparent);
+  display: grid; place-items: center; font-size: 18px; font-weight: 600; pointer-events: none; }
+.walkpad { position: absolute; right: 14px; bottom: 14px; display: grid; grid-template-columns: repeat(3, 46px); grid-template-rows: repeat(2, 46px); gap: 6px; }
+.walkpad button { border: 1px solid var(--line); background: var(--panel); border-radius: 10px; font-size: 18px; box-shadow: var(--shadow); touch-action: none; }
+.walkpad .up { grid-column: 2; grid-row: 1; } .walkpad .left { grid-column: 1; grid-row: 2; } .walkpad .down { grid-column: 2; grid-row: 2; } .walkpad .right { grid-column: 3; grid-row: 2; }
+
+/* ---------- panel ---------- */
+.panel { grid-area: panel; border-left: 1px solid var(--line); background: var(--panel); display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+.tabs { display: flex; border-bottom: 1px solid var(--line); padding: 0 8px; }
+.tabs button { border: 0; background: none; padding: 11px 10px 9px; cursor: pointer; color: var(--muted); font-weight: 600; border-bottom: 2px solid transparent; }
+.tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+.pane { overflow-y: auto; padding: 14px 16px 24px; display: flex; flex-direction: column; gap: 14px; min-height: 0; flex: 1; }
+.pane > * { flex-shrink: 0; }   /* sem isso as listas encolhem a zero quando o painel rola */
+.pane h2 { font-size: 15px; margin: 0; font-weight: 700; text-wrap: balance; }
+.pane h3 { font-size: 11px; margin: 4px 0 0; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; }
+.pane p { margin: 0; color: var(--muted); line-height: 1.5; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+label.f { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); font-weight: 500; min-width: 0; }
+label.f input, label.f select { border: 1px solid var(--line); background: var(--bg); border-radius: 6px; padding: 7px 8px; color: var(--ink); width: 100%; min-width: 0; }
+label.f input[type="number"] { font-family: var(--font-num); font-variant-numeric: tabular-nums; }
+label.f input[type="color"] { padding: 2px; height: 34px; }
+label.f input[type="range"] { padding: 0; accent-color: var(--accent); }
+.unit { font-family: var(--font-num); font-size: 10.5px; color: var(--muted); }
+label.check { display: flex; gap: 8px; align-items: center; color: var(--ink); font-size: 13px; cursor: pointer; }
+label.check input { accent-color: var(--accent); width: 16px; height: 16px; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.btn { border: 1px solid var(--line); background: var(--bg); border-radius: 6px; padding: 7px 11px; cursor: pointer; font-weight: 500; }
+.btn:hover { border-color: var(--muted); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.btn.danger { color: var(--danger); }
+.btn.danger.armed { background: var(--danger); color: var(--panel); border-color: var(--danger); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn.sm { padding: 4px 8px; font-size: 12px; }
+.list { display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
+.list > div { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-top: 1px solid var(--line); min-width: 0; }
+.list > div:first-child { border-top: 0; }
+.list .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.list .meta { font-family: var(--font-num); font-size: 11px; color: var(--muted); }
+.list > div.sel { background: var(--accent-soft); }
+.empty { border: 1px dashed var(--line); border-radius: var(--r); padding: 12px; color: var(--muted); text-align: center; line-height: 1.45; }
+.thumb { width: 100%; max-height: 140px; object-fit: contain; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; }
+.readout { font-family: var(--font-num); font-variant-numeric: tabular-nums; font-size: 13px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; }
+.readout b { font-weight: 500; color: var(--ink); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { border: 1px solid var(--line); background: var(--bg); border-radius: 999px; padding: 4px 10px; cursor: pointer; font-size: 12px; }
+.chip[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
+.step { display: flex; gap: 8px; align-items: flex-start; }
+.step i { font-style: normal; font-family: var(--font-num); font-size: 11px; background: var(--ink); color: var(--panel); border-radius: 999px; min-width: 20px; height: 20px; display: grid; place-items: center; }
+textarea.code { width: 100%; min-height: 120px; font-family: var(--font-num); font-size: 11px; background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; padding: 8px; }
+.modal { position: fixed; inset: 0; background: rgba(10, 12, 11, .55); display: grid; place-items: center; z-index: 20; padding: 16px; }
+.modal > div { background: var(--panel); border-radius: 12px; padding: 16px; max-width: min(920px, 100%); max-height: 100%; overflow: auto; display: flex; flex-direction: column; gap: 12px; box-shadow: var(--shadow); }
+.modal img { max-width: 100%; border-radius: 6px; }
+kbd { font-family: var(--font-num); font-size: 11px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 4px; background: var(--bg); }
+
+@media (max-width: 760px) {
+  #app { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto minmax(0, 42%);
+    grid-template-areas: "bar" "stage" "tools" "panel"; }
+  .tools { flex-direction: row; justify-content: space-around; border-right: 0; border-top: 1px solid var(--line); padding: 4px; }
+  .tools .sep { display: none; }
+  .tool { flex: 1; }
+  .tool[aria-pressed="true"] { box-shadow: inset 0 3px 0 var(--accent); }
+  .panel { border-left: 0; border-top: 1px solid var(--line); }
+  .brand span { display: none; }
+  .bar { gap: 6px 8px; }
+  .hide-sm { display: none !important; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/",
+    "@sparkjsdev/spark": "https://cdn.jsdelivr.net/npm/@sparkjsdev/spark@2.2.0/dist/spark.module.js"
+  }
+}
+</script>
+
+<div id="app">
+  <header class="bar">
+    <div class="brand"><b>Apê 3D</b><span id="sceneLabel">carregando…</span></div>
+    <div class="seg" role="group" aria-label="Visual">
+      <button id="vFoto" data-view="foto" aria-pressed="true" title="Splat fotorrealista">Foto</button>
+      <button id="vMaq" data-view="maquete" aria-pressed="false" title="Maquete do RoomPlan">Maquete</button>
+      <button id="vRx" data-view="ambos" aria-pressed="false" title="Splat com a maquete transparente por cima">Raio-X</button>
+    </div>
+    <div class="seg" role="group" aria-label="Navegação">
+      <button id="nOrbit" data-nav="orbit" aria-pressed="true" title="Girar em volta">Orbitar</button>
+      <button id="nWalk" data-nav="walk" aria-pressed="false" title="Primeira pessoa: arraste pra olhar, WASD pra andar">Andar</button>
+    </div>
+    <select id="goto" aria-label="Ir para"><option value="">Ir para…</option></select>
+    <button class="iconbtn" id="undoBtn" title="Desfazer (Ctrl+Z)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg><span class="hide-sm">Desfazer</span></button>
+    <button class="iconbtn" id="shotBtn" title="Capturar imagem da vista"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="7" width="18" height="13" rx="2"/><circle cx="12" cy="13.5" r="3.5"/><path d="M8 7l1.5-3h5L16 7"/></svg><span class="hide-sm">Capturar</span></button>
+  </header>
+
+  <nav class="tools" aria-label="Ferramentas">
+    <button class="tool" data-tool="select" aria-pressed="true" title="Selecionar e arrastar (V)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M5 3l14 8-6 1.5L10 19z"/></svg>Mover</button>
+    <button class="tool" data-tool="frame" aria-pressed="false" title="Pendurar quadro (Q)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="5" width="16" height="14" rx="1"/><rect x="7" y="8" width="10" height="8"/><path d="M7 16l3.5-4 2.5 3 1.5-1.5L17 16"/></svg>Quadro</button>
+    <button class="tool" data-tool="furniture" aria-pressed="false" title="Colocar móvel (M)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 11V8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v3"/><path d="M3 11h18v5H3z"/><path d="M5 16v3M19 16v3"/></svg>Móvel</button>
+    <button class="tool" data-tool="measure" aria-pressed="false" title="Medir (T)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="2.5" y="8" width="19" height="8" rx="1.5"/><path d="M6 8v3M9.5 8v4.5M13 8v3M16.5 8v4.5"/></svg>Medir</button>
+    <div class="sep"></div>
+    <button class="tool" data-tool="align" aria-pressed="false" title="Alinhar splat com a maquete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3v18M3 12h18"/><circle cx="12" cy="12" r="5"/></svg>Alinhar</button>
+  </nav>
+
+  <main class="stage" id="stage">
+    <canvas id="view" aria-label="Vista 3D do apartamento"></canvas>
+    <div class="hint" id="hint"></div>
+    <div class="progress" id="progress" hidden></div>
+    <div class="measure-label" id="measureLabel" hidden></div>
+    <div class="banner" id="demoBanner" hidden>
+      <p id="bannerText"><b>Este é um apê de exemplo.</b> Arraste aqui o USDZ do RoomPlan e os splats (.ply, .spz) dos cômodos, ou abra a aba Cena.</p>
+      <button class="btn primary" id="demoOpen">Abrir arquivos</button>
+      <button class="btn" id="bannerClose" hidden>Entendi</button>
+    </div>
+    <div class="walkpad" id="walkpad" hidden>
+      <button class="up" data-move="f" aria-label="Frente">▲</button>
+      <button class="left" data-move="l" aria-label="Esquerda">◀</button>
+      <button class="down" data-move="b" aria-label="Trás">▼</button>
+      <button class="right" data-move="r" aria-label="Direita">▶</button>
+    </div>
+    <div class="drop" id="drop" hidden>Solte os arquivos do apê aqui</div>
+    <div class="toast" id="toast" hidden></div>
+  </main>
+
+  <aside class="panel">
+    <div class="tabs" role="tablist">
+      <button role="tab" id="tabTool" data-tab="tool" aria-selected="true">Ferramenta</button>
+      <button role="tab" id="tabLayouts" data-tab="layouts" aria-selected="false">Layouts</button>
+      <button role="tab" id="tabScene" data-tab="scene" aria-selected="false">Cena</button>
+    </div>
+    <div class="pane" id="pane"></div>
+  </aside>
+</div>
+<input type="file" id="fileAny" multiple hidden accept=".ply,.spz,.splat,.ksplat,.usdz,.usdc,.usda,.glb,.gltf,.json,image/*">
+<input type="file" id="fileModel" hidden accept=".usdz,.usdc,.usda,.glb,.gltf">
+<input type="file" id="fileSplat" multiple hidden accept=".ply,.spz,.splat,.ksplat">
+<input type="file" id="fileImage" hidden accept="image/*">
+<input type="file" id="fileGlb" hidden accept=".glb,.gltf">
+<input type="file" id="fileJson" hidden accept=".json,application/json">
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { TransformControls } from 'three/addons/controls/TransformControls.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { USDLoader } from 'three/addons/loaders/USDLoader.js';
+import { SparkRenderer, SplatMesh } from '@sparkjsdev/spark';
+
+/* =====================================================================
+   Utilidades
+   ===================================================================== */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const uid = () => Math.random().toString(36).slice(2, 10);
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const cm = m => Math.round(m * 1000) / 10;               // metros → cm com 1 casa
+const fmtCm = m => `${cm(m).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} cm`;
+const slug = s => String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || uid();
+const baseName = f => f.replace(/\.[^.]+$/, '');
+const IDENT = () => ({ p: [0, 0, 0], q: [0, 0, 0, 1], s: 1 });
+const deep = o => JSON.parse(JSON.stringify(o));
+function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
+
+let toastTimer;
+function toast(msg, ms = 2600) {
+  const el = $('#toast'); el.textContent = msg; el.hidden = false;
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => { el.hidden = true; }, ms);
+}
+function progress(msg) { const el = $('#progress'); el.hidden = !msg; el.textContent = msg || ''; }
+
+/* =====================================================================
+   Armazenamento: disco (serve.py), IndexedDB ou memória
+   ===================================================================== */
+const Store = (() => {
+  let backend = 'memoria', db = null;
+  const mem = new Map(), memBlobs = new Map();
+  const openIDB = () => new Promise((res, rej) => {
+    const r = indexedDB.open('ape3d', 1);
+    r.onupgradeneeded = () => { r.result.createObjectStore('kv'); r.result.createObjectStore('blobs'); };
+    r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+  });
+  const tx = (store, mode, fn) => new Promise((res, rej) => {
+    const t = db.transaction(store, mode); const req = fn(t.objectStore(store));
+    t.oncomplete = () => res(req && req.result); t.onerror = () => rej(t.error); t.onabort = () => rej(t.error);
+  });
+  async function init() {
+    try {
+      const r = await fetch('api/ping', { cache: 'no-store' });
+      if (r.ok && (await r.json()).ok) { backend = 'disco'; return backend; }
+    } catch (e) { /* sem servidor local */ }
+    try { db = await openIDB(); backend = 'navegador'; } catch (e) { backend = 'memoria'; }
+    return backend;
+  }
+  async function get(key) {
+    try {
+      if (backend === 'disco') { const r = await fetch('api/kv/' + encodeURIComponent(key), { cache: 'no-store' }); return r.ok ? await r.json() : undefined; }
+      if (backend === 'navegador') return await tx('kv', 'readonly', s => s.get(key));
+    } catch (e) { console.warn('Store.get', e); }
+    return mem.get(key);
+  }
+  async function set(key, value) {
+    mem.set(key, value);
+    try {
+      if (backend === 'disco') { await fetch('api/kv/' + encodeURIComponent(key), { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(value) }); return; }
+      if (backend === 'navegador') await tx('kv', 'readwrite', s => s.put(value, key));
+    } catch (e) { console.warn('Store.set', e); }
+  }
+  async function putBlob(id, blob) {
+    memBlobs.set(id, blob);
+    try {
+      if (backend === 'disco') { await fetch('api/blob/' + encodeURIComponent(id), { method: 'PUT', body: blob }); return; }
+      if (backend === 'navegador') await tx('blobs', 'readwrite', s => s.put(blob, id));
+    } catch (e) { console.warn('Store.putBlob', e); }
+  }
+  async function getBlob(id) {
+    if (memBlobs.has(id)) return memBlobs.get(id);
+    try {
+      if (backend === 'disco') { const r = await fetch('api/blob/' + encodeURIComponent(id)); if (r.ok) { const b = await r.blob(); memBlobs.set(id, b); return b; } }
+      if (backend === 'navegador') { const b = await tx('blobs', 'readonly', s => s.get(id)); if (b) memBlobs.set(id, b); return b; }
+    } catch (e) { console.warn('Store.getBlob', e); }
+    return undefined;
+  }
+  return { init, get, set, putBlob, getBlob, get backend() { return backend; } };
+})();
+
+/* =====================================================================
+   Estado
+   ===================================================================== */
+const PRESETS = [
+  { key: 'sofa3', name: 'Sofá 3 lugares', L: 210, P: 90, A: 85, color: '#7d8478' },
+  { key: 'sofa2', name: 'Sofá 2 lugares', L: 160, P: 88, A: 85, color: '#7d8478' },
+  { key: 'poltrona', name: 'Poltrona', L: 78, P: 80, A: 90, color: '#a9734a' },
+  { key: 'centro', name: 'Mesa de centro', L: 100, P: 60, A: 40, color: '#9b7650' },
+  { key: 'rack', name: 'Rack', L: 180, P: 40, A: 50, color: '#5c4a3a' },
+  { key: 'jantar', name: 'Mesa de jantar (6)', L: 160, P: 90, A: 76, color: '#9b7650' },
+  { key: 'aparador', name: 'Aparador', L: 120, P: 38, A: 80, color: '#5c4a3a' },
+  { key: 'estante', name: 'Estante', L: 80, P: 35, A: 180, color: '#c9b79a' },
+  { key: 'casal', name: 'Cama casal', L: 138, P: 188, A: 55, color: '#d9d4c8' },
+  { key: 'queen', name: 'Cama queen', L: 158, P: 198, A: 55, color: '#d9d4c8' },
+  { key: 'king', name: 'Cama king', L: 193, P: 203, A: 55, color: '#d9d4c8' },
+  { key: 'criado', name: 'Criado-mudo', L: 50, P: 40, A: 55, color: '#9b7650' },
+  { key: 'escrivaninha', name: 'Escrivaninha', L: 120, P: 60, A: 75, color: '#c9b79a' },
+  { key: 'tapete', name: 'Tapete', L: 200, P: 250, A: 1, color: '#b7a58a' },
+  { key: 'livre', name: 'Caixa livre', L: 100, P: 50, A: 100, color: '#8e9aa3' },
+];
+const FRAME_STYLES = {
+  preta: { label: 'Preta', color: 0x1c1c1c, metal: 0 },
+  branca: { label: 'Branca', color: 0xf1f0ec, metal: 0 },
+  madeira: { label: 'Madeira escura', color: 0x6b4429, metal: 0 },
+  carvalho: { label: 'Carvalho claro', color: 0xc29d6f, metal: 0 },
+  dourada: { label: 'Dourada', color: 0xbf9b48, metal: 0.65 },
+  aluminio: { label: 'Alumínio', color: 0xb8bcbf, metal: 0.6 },
+  nenhuma: { label: 'Sem moldura (tela)', color: 0xf3f1ec, metal: 0 },
+};
+
+const state = {
+  model: null,               // { src:{kind:'url'|'blob'|'demo', url|blobId, fileName}, name }
+  splats: [],                // [{ id, name, src, t:{p,q,s}, visible }]
+  items: [],                 // quadros e móveis
+  hidden: [],                // chaves dos móveis do escaneamento ocultos
+  view: 'foto',
+  light: 1,
+  floorY: 0,
+  frameDefaults: { w: 60, h: 80, d: 3, style: 'preta', mw: 2.5, pp: 0, center: 150, auto: true, imageId: null, keep: true },
+  furnDefaults: { preset: 'sofa3', name: 'Sofá 3 lugares', L: 210, P: 90, A: 85, color: '#7d8478' },
+};
+let demo = false;
+let tool = 'select';
+let tab = 'tool';
+let selectedId = null;
+let alignSplatId = null;
+const history = [];
+
+const persist = debounce(async () => {
+  const data = {
+    model: state.model && state.model.src.kind !== 'demo' ? state.model : null,
+    modelId: state.model?.id || null,
+    splats: state.splats, items: demo ? [] : state.items, hidden: state.hidden,
+    view: state.view, light: state.light, floorY: state.floorY,
+    frameDefaults: state.frameDefaults, furnDefaults: state.furnDefaults,
+  };
+  await Store.set('current', data);
+}, 500);
+function pushHistory() {
+  history.push(JSON.stringify(state.items));
+  if (history.length > 60) history.shift();
+}
+function commit() { persist(); }
+
+/* =====================================================================
+   Three.js
+   ===================================================================== */
+const stageEl = $('#stage');
+const canvas = $('#view');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, preserveDrawingBuffer: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(65, 1, 0.03, 400);
+camera.position.set(5, 4, 6);
+const spark = new SparkRenderer({ renderer });
+scene.add(spark);
+
+const hemi = new THREE.HemisphereLight(0xffffff, 0x9b9283, 1.5);
+const sun = new THREE.DirectionalLight(0xffffff, 1.0); sun.position.set(3, 8, 4);
+const amb = new THREE.AmbientLight(0xffffff, 0.35);
+scene.add(hemi, sun, amb);
+
+const modelGroup = new THREE.Group(); modelGroup.name = 'maquete';
+const splatGroup = new THREE.Group(); splatGroup.name = 'splats';
+const itemGroup = new THREE.Group(); itemGroup.name = 'itens';
+const helperGroup = new THREE.Group(); helperGroup.name = 'auxiliares';
+scene.add(modelGroup, splatGroup, itemGroup, helperGroup);
+
+const grid = new THREE.GridHelper(30, 60, 0x8a918c, 0xb7bdb8);
+grid.material.transparent = true; grid.material.opacity = 0.4; grid.material.depthWrite = false;
+scene.add(grid);
+
+const orbit = new OrbitControls(camera, canvas);
+orbit.enableDamping = true; orbit.dampingFactor = 0.12; orbit.target.set(0, 1, 0); orbit.maxDistance = 120;
+
+const tcontrols = new TransformControls(camera, canvas);
+tcontrols.setSize(0.9);
+scene.add(tcontrols.getHelper());
+tcontrols.addEventListener('dragging-changed', e => {
+  orbit.enabled = !e.value && nav.mode === 'orbit';
+  if (!e.value) onSplatGizmoEnd();
+});
+
+const selBox = new THREE.Box3Helper(new THREE.Box3(), 0xe8b33a);
+selBox.visible = false; selBox.material.depthTest = false; selBox.renderOrder = 10;
+scene.add(selBox);
+
+function themeColors() {
+  const cs = getComputedStyle(document.documentElement);
+  scene.background = new THREE.Color(cs.getPropertyValue('--stage').trim() || '#dde1dc');
+  const accent = new THREE.Color(cs.getPropertyValue('--accent').trim() || '#d39a17');
+  selBox.material.color.copy(accent);
+  measure.line.material.color.copy(accent);
+  for (const m of measure.dots) m.material.color.copy(accent);
+}
+new MutationObserver(themeColors).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', themeColors); } catch (e) { /* navegador antigo */ }
+
+function resize() {
+  const r = stageEl.getBoundingClientRect();
+  const w = Math.max(1, r.width), h = Math.max(1, r.height);
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h; camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(stageEl);
+
+function applyLight() {
+  hemi.intensity = 1.5 * state.light; sun.intensity = 1.0 * state.light; amb.intensity = 0.35 * state.light;
+}
+
+/* =====================================================================
+   Maquete (RoomPlan USDZ ou GLB)
+   ===================================================================== */
+const KIND = {
+  wall: { color: 0xe7e3da, label: 'Parede' },
+  floor: { color: 0xcbb898, label: 'Piso' },
+  door: { color: 0x8a6e52, label: 'Porta' },
+  window: { color: 0x9cc4d6, label: 'Janela', opacity: 0.45 },
+  opening: { color: 0xcccccc, label: 'Vão', opacity: 0 },
+  object: { color: 0xb3bcc2, label: 'Móvel' },
+  other: { color: 0xd2d2cc, label: 'Outro' },
+};
+const OBJ_NAMES = {
+  sofa: 'Sofá', chair: 'Cadeira', table: 'Mesa', bed: 'Cama', storage: 'Armário', refrigerator: 'Geladeira', stove: 'Fogão',
+  sink: 'Pia', toilet: 'Vaso', bathtub: 'Banheira', oven: 'Forno', dishwasher: 'Lava-louças', washerdryer: 'Lavadora',
+  washer: 'Lavadora', television: 'TV', fireplace: 'Lareira', stairs: 'Escada', cabinet: 'Armário',
+};
+let modelMeshes = [];   // { mesh, kind, key, label, optKey? }
+let sceneModels = [];   // variantes do scene.json: { id, name, url, source, rooms }
+function normalizeModels(sj) {
+  if (!sj) return { list: [], def: null };
+  let list = Array.isArray(sj.models) ? sj.models.filter(m => m && m.url).map(m => ({ ...m, id: m.id || slug(m.name || m.url) })) : [];
+  let def = typeof sj.model === 'string' ? sj.model : null;
+  const legacyUrl = sj.model && typeof sj.model === 'object' ? sj.model.url : null;
+  if (legacyUrl && !list.some(m => m.url === legacyUrl)) { const id = slug(baseName(legacyUrl.split('/').pop())); list.unshift({ id, name: 'Escaneamento', url: legacyUrl, source: 'scan' }); def = def || id; }
+  if (def && !list.some(m => m.id === def)) def = list.find(m => m.url === def)?.id || null;
+  return { list, def: def || list[0]?.id || null };
+}
+function modelFromEntry(m) { return { src: { kind: 'url', url: m.url }, name: m.name, id: m.id, source: m.source || null }; }
+function currentRooms() { return (sceneModels.find(m => m.id === state.model?.id)?.rooms) || []; }
+
+const PREFIX_KIND = { wall: 'wall', door: 'door', window: 'window', floor: 'floor', storage: 'object', object: 'object', opening: 'opening' };
+function classify(obj) {
+  for (let o = obj; o; o = o.parent) {
+    const n = (o.name || '').toLowerCase();
+    if (!n) continue;
+    const pre = n.includes('__') ? PREFIX_KIND[n.split('__')[0]] : null;   // nomes gerados pela planta: Wall__Rótulo
+    if (pre) return pre;
+    if (n.startsWith('opcional__')) continue;
+    if (/door|porta/.test(n)) return 'door';
+    if (/window|janela/.test(n)) return 'window';
+    if (/opening/.test(n)) return 'opening';
+    if (/wall|parede/.test(n)) return 'wall';
+    if (/floor|piso/.test(n)) return 'floor';
+    if (/object_grp|storage|sofa|chair|table|bed|refrigerator|stove|sink|toilet|bathtub|oven|dishwasher|washer|dryer|fireplace|television|stairs|cabinet/.test(n)) return 'object';
+    if (o.parent === modelGroup) break;
+  }
+  return 'other';
+}
+function nameLabel(name) {
+  return (name.split('__')[1] || '').replace(/#\d+$/, '').replace(/_/g, ' ').trim();
+}
+function objLabel(obj) {
+  if ((obj.name || '').includes('__')) return nameLabel(obj.name) || 'Móvel';
+  for (let o = obj; o && o !== modelGroup; o = o.parent) {
+    const n = (o.name || '').toLowerCase().replace(/_?grp$/, '').replace(/[_\d]+$/, '').replace(/_/g, '');
+    if (OBJ_NAMES[n]) return OBJ_NAMES[n];
+  }
+  return 'Móvel';
+}
+function pathKey(obj) {
+  const parts = [];
+  for (let o = obj; o && o !== modelGroup; o = o.parent) parts.unshift(o.name || '?');
+  return parts.join('/');
+}
+
+async function readSource(src) {
+  if (src.kind === 'url') {
+    const r = await fetch(src.url);
+    if (!r.ok) throw new Error(`Não achei ${src.url} (${r.status})`);
+    const name = src.url.split('/').pop();
+    if (name.endsWith('.b64.txt')) {   // modelo em base64 (usado quando o servidor não entrega .glb)
+      const bin = atob((await r.text()).trim()); const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      return { buffer: bytes.buffer, name: name.slice(0, -8) };
+    }
+    return { buffer: await r.arrayBuffer(), name };
+  }
+  if (src.kind === 'blob') {
+    const b = await Store.getBlob(src.blobId);
+    if (!b) throw new Error(`Arquivo ${src.fileName || src.blobId} não está mais salvo; abra de novo`);
+    return { buffer: await b.arrayBuffer(), name: src.fileName || 'arquivo' };
+  }
+  throw new Error('Fonte desconhecida');
+}
+
+async function parseModel(buffer, name) {
+  const ext = name.split('.').pop().toLowerCase();
+  if (ext === 'glb' || ext === 'gltf') {
+    const gltf = await new GLTFLoader().parseAsync(buffer, '');
+    return gltf.scene;
+  }
+  return new USDLoader().parse(buffer);
+}
+
+function clearModel() {
+  modelGroup.clear();
+  modelMeshes = [];
+}
+
+function installModel(root) {
+  clearModel();
+  modelBounds = null;
+  modelGroup.add(root);
+  root.updateMatrixWorld(true);
+  const floorBox = new THREE.Box3();
+  root.traverse(o => {
+    if (!o.isMesh) return;
+    const kind = classify(o);
+    const st = KIND[kind];
+    o.material = new THREE.MeshStandardMaterial({ color: st.color, roughness: 0.9, metalness: 0, side: THREE.DoubleSide });
+    o.userData.kind = kind;
+    const entry = { mesh: o, kind, key: pathKey(o), label: kind === 'object' ? objLabel(o) : st.label };
+    for (let p = o.parent; p && p !== modelGroup; p = p.parent) {
+      if ((p.name || '').toLowerCase().startsWith('opcional__')) { entry.optKey = 'opt:' + p.name; entry.optLabel = nameLabel(p.name); break; }
+    }
+    modelMeshes.push(entry);
+    if (kind === 'floor') floorBox.expandByObject(o);
+  });
+  const all = new THREE.Box3().setFromObject(root);
+  state.floorY = !floorBox.isEmpty() ? floorBox.max.y : (all.isEmpty() ? 0 : all.min.y);
+  grid.position.y = state.floorY;
+  applyView();
+}
+
+async function loadModel() {
+  clearModel();
+  if (!state.model) { applyView(); return; }
+  if (state.model.src.kind === 'demo') { installModel(buildDemoModel()); return; }
+  progress('Carregando maquete…');
+  try {
+    const { buffer, name } = await readSource(state.model.src);
+    installModel(await parseModel(buffer, name));
+  } catch (e) {
+    console.error(e); toast('Não consegui abrir a maquete: ' + e.message, 5000);
+  } finally { progress(''); }
+}
+
+/* Apê de exemplo, montado com os mesmos nomes que o RoomPlan usa */
+function buildDemoModel() {
+  const root = new THREE.Group(); root.name = 'Room';
+  const arch = new THREE.Group(); arch.name = 'Arch_grp';
+  const objs = new THREE.Group(); objs.name = 'Object_grp';
+  root.add(arch, objs);
+  let n = 0;
+  const box = (parent, name, w, h, d, x, y, z, ry = 0) => {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d));
+    m.name = name + (n++); m.position.set(x, y, z); m.rotation.y = ry; parent.add(m); return m;
+  };
+  const H = 2.6, t = 0.12;
+  box(root, 'Floor', 8.6, 0.02, 5.4, 0, -0.01, 0);
+  box(arch, 'Wall', 8.6, H, t, 0, H / 2, -2.7);
+  box(arch, 'Wall', 8.6, H, t, 0, H / 2, 2.7);
+  box(arch, 'Wall', 5.4, H, t, -4.3, H / 2, 0, Math.PI / 2);
+  box(arch, 'Wall', 5.4, H, t, 4.3, H / 2, 0, Math.PI / 2);
+  box(arch, 'Wall', 1.9, H, t, 1.3, H / 2, -1.75, Math.PI / 2);   // divisória
+  box(arch, 'Wall', 1.9, H, t, 1.3, H / 2, 1.75, Math.PI / 2);
+  box(arch, 'Door', 0.82, 2.1, t + 0.02, 4.3, 1.05, 1.6, Math.PI / 2);
+  box(arch, 'Window', 2.0, 1.3, t + 0.02, -1.6, 1.55, -2.7);
+  box(arch, 'Window', 1.4, 1.2, t + 0.02, 2.8, 1.5, -2.7);
+  box(objs, 'Sofa', 2.1, 0.85, 0.9, -1.8, 0.425, 2.15);
+  box(objs, 'Table', 1.6, 0.76, 0.9, -2.9, 0.38, -1.2);
+  box(objs, 'Bed', 1.58, 0.55, 1.98, 2.9, 0.275, 0.9);
+  box(objs, 'Storage', 1.8, 2.2, 0.6, 3.3, 1.1, -2.3);
+  return root;
+}
+async function demoArtBlob() {
+  const c = document.createElement('canvas'); c.width = 600; c.height = 800;
+  const g = c.getContext('2d');
+  g.fillStyle = '#efe6d6'; g.fillRect(0, 0, 600, 800);
+  const cols = ['#c8553d', '#2d4a5a', '#e2b44b', '#7a8b6f', '#1f2522'];
+  const shapes = [[60, 90, 300, 300, 0], [260, 330, 280, 260, 1], [110, 520, 200, 200, 2], [330, 600, 170, 140, 3]];
+  for (const [x, y, w, h, i] of shapes) { g.fillStyle = cols[i]; g.beginPath(); g.ellipse(x + w / 2, y + h / 2, w / 2, h / 2, 0, 0, Math.PI * 2); g.fill(); }
+  g.strokeStyle = cols[4]; g.lineWidth = 10; g.beginPath(); g.moveTo(40, 760); g.bezierCurveTo(200, 420, 380, 900, 560, 380); g.stroke();
+  return new Promise(res => c.toBlob(res, 'image/png'));
+}
+
+/* =====================================================================
+   Splats
+   ===================================================================== */
+const splatObjs = new Map();   // id → SplatMesh
+
+function applyT(obj, t) {
+  obj.position.fromArray(t.p); obj.quaternion.fromArray(t.q); obj.scale.setScalar(t.s);
+  obj.updateMatrixWorld(true);
+}
+function readT(obj) {
+  return { p: obj.position.toArray(), q: obj.quaternion.toArray(), s: obj.scale.x };
+}
+
+async function addSplatToScene(entry) {
+  const opts = { raycastable: true };
+  if (entry.src.kind === 'url') opts.url = entry.src.url;
+  else {
+    const b = await Store.getBlob(entry.src.blobId);
+    if (!b) throw new Error(`O splat ${entry.name} não está mais salvo neste navegador; abra o arquivo de novo`);
+    opts.fileBytes = new Uint8Array(await b.arrayBuffer());
+    opts.fileName = entry.src.fileName;
+  }
+  const mesh = new SplatMesh(opts);
+  mesh.name = entry.name;
+  await mesh.initialized;
+  applyT(mesh, entry.t);
+  mesh.visible = entry.visible !== false && state.view !== 'maquete';
+  splatGroup.add(mesh);
+  splatObjs.set(entry.id, mesh);
+  return mesh;
+}
+async function loadSplats() {
+  for (const m of splatObjs.values()) { splatGroup.remove(m); m.dispose?.(); }
+  splatObjs.clear();
+  let i = 0;
+  for (const e of state.splats) {
+    i++; progress(`Carregando splat ${i} de ${state.splats.length}: ${e.name}`);
+    try { await addSplatToScene(e); } catch (err) { console.error(err); toast(err.message, 5000); }
+  }
+  progress('');
+}
+function splatBox(mesh) {
+  let b;
+  try { b = mesh.getBoundingBox(true).clone(); } catch (e) { b = new THREE.Box3(); }
+  mesh.updateMatrixWorld(true);
+  return b.applyMatrix4(mesh.matrixWorld);
+}
+function removeSplat(id) {
+  const m = splatObjs.get(id);
+  if (m) { if (tcontrols.object === m) tcontrols.detach(); splatGroup.remove(m); m.dispose?.(); splatObjs.delete(id); }
+  state.splats = state.splats.filter(s => s.id !== id);
+  if (alignSplatId === id) alignSplatId = null;
+  commit(); refreshGoto(); render();
+}
+
+/* =====================================================================
+   Visual (Foto / Maquete / Raio-X)
+   ===================================================================== */
+function applyView() {
+  const v = state.view;
+  for (const m of modelMeshes) {
+    m.faded = false;
+    const st = KIND[m.kind]; const mat = m.mesh.material;
+    const hiddenObj = (m.kind === 'object' && state.hidden.includes(m.key)) || (m.optKey && state.hidden.includes(m.optKey));
+    m.mesh.visible = !hiddenObj && m.kind !== 'opening';
+    if (v === 'foto') { mat.visible = false; }
+    else if (v === 'maquete') {
+      mat.visible = true; const op = st.opacity ?? 1;
+      mat.transparent = op < 1; mat.opacity = op; mat.depthWrite = op >= 1; mat.wireframe = false;
+    } else {
+      mat.visible = true; mat.transparent = true; mat.depthWrite = false; mat.wireframe = false;
+      mat.opacity = m.kind === 'floor' ? 0.12 : m.kind === 'object' ? 0.22 : 0.28;
+    }
+    mat.needsUpdate = true;
+  }
+  state.splats.forEach(e => { const m = splatObjs.get(e.id); if (m) m.visible = v !== 'maquete' && e.visible !== false; });
+  grid.visible = !modelMeshes.length || v === 'ambos';
+  $$('[data-view]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.view === v)));
+}
+function setView(v) { state.view = v; applyView(); commit(); }
+
+/* Casa de bonecas: paredes entre a câmera e o centro ficam transparentes quando se olha de fora */
+const _wc = new THREE.Vector3(), _sc = new THREE.Vector3(), _cv = new THREE.Vector3();
+let modelBounds = null;
+function dollhouse() {
+  if (!modelMeshes.length || state.view === 'foto') return;
+  if (!modelBounds) { modelBounds = new THREE.Box3().setFromObject(modelGroup); }
+  const outside = nav.mode === 'orbit' && !modelBounds.clone().expandByScalar(0.05).containsPoint(camera.position);
+  modelBounds.getCenter(_sc);
+  _cv.copy(camera.position).sub(_sc).setY(0);
+  const base = state.view === 'maquete' ? 1 : 0.28;
+  for (const m of modelMeshes) {
+    if (m.kind !== 'wall' && m.kind !== 'door' && m.kind !== 'window') continue;
+    const mat = m.mesh.material;
+    let fade = false;
+    if (outside) {
+      if (!m.center) { m.center = new THREE.Box3().setFromObject(m.mesh).getCenter(new THREE.Vector3()); }
+      _wc.copy(m.center).sub(_sc).setY(0);
+      fade = _wc.lengthSq() > 0.25 && _wc.dot(_cv) > 0.35 * _wc.length() * _cv.length();
+    }
+    m.faded = fade;
+    const target = fade ? 0.08 : (KIND[m.kind].opacity ?? base);
+    const want = state.view === 'maquete' ? target : Math.min(target, base);
+    if (Math.abs(mat.opacity - want) > 0.001 || mat.transparent !== (want < 1)) {
+      mat.opacity = want; mat.transparent = want < 1; mat.depthWrite = want >= 1; mat.needsUpdate = true;
+    }
+  }
+}
+
+/* =====================================================================
+   Itens: quadros e móveis
+   ===================================================================== */
+const itemObjs = new Map();   // id → Object3D
+const texCache = new Map();   // imageId → Promise<Texture>
+const glbCache = new Map();   // assetId → Promise<Object3D>
+const UP = new THREE.Vector3(0, 1, 0);
+
+function getTexture(imageId) {
+  if (!imageId) return Promise.resolve(null);
+  if (!texCache.has(imageId)) {
+    texCache.set(imageId, (async () => {
+      const b = await Store.getBlob(imageId);
+      if (!b) return null;
+      // ImageBitmap não aceita flipY do WebGL; o giro vertical vem no próprio bitmap
+      const bmp = await createImageBitmap(b, { imageOrientation: 'flipY' }).catch(() => null);
+      let tex;
+      if (bmp) { tex = new THREE.Texture(bmp); tex.flipY = false; }
+      else {
+        const url = URL.createObjectURL(b);
+        tex = await new THREE.TextureLoader().loadAsync(url).catch(() => null);
+        if (!tex) return null;
+      }
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+      tex.needsUpdate = true;
+      return tex;
+    })().catch(() => null));
+  }
+  return texCache.get(imageId);
+}
+function imageSize(tex) {
+  const img = tex?.image; if (!img) return null;
+  return { w: img.width || img.naturalWidth, h: img.height || img.naturalHeight };
+}
+function frameQuat(normal) {
+  const z = new THREE.Vector3().fromArray(normal).setY(0).normalize();
+  const x = new THREE.Vector3().crossVectors(UP, z).normalize();
+  return new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(x, UP, z));
+}
+function boxMesh(w, h, d, mat) { return new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); }
+
+async function buildFrame(item) {
+  const g = new THREE.Group();
+  const W = item.w / 100, H = item.h / 100, D = Math.max(item.d, 0.5) / 100;
+  const style = FRAME_STYLES[item.style] || FRAME_STYLES.preta;
+  const noFrame = item.style === 'nenhuma';
+  const mw = noFrame ? 0 : Math.min(item.mw / 100, W / 3, H / 3);
+  const pp = Math.min(Math.max(item.pp, 0) / 100, (W - 2 * mw) / 3, (H - 2 * mw) / 3);
+  const frameMat = new THREE.MeshStandardMaterial({ color: style.color, roughness: style.metal ? 0.35 : 0.65, metalness: style.metal });
+  if (mw > 0) {
+    const top = boxMesh(W, mw, D, frameMat); top.position.set(0, H / 2 - mw / 2, D / 2);
+    const bot = boxMesh(W, mw, D, frameMat); bot.position.set(0, -H / 2 + mw / 2, D / 2);
+    const lft = boxMesh(mw, H - 2 * mw, D, frameMat); lft.position.set(-W / 2 + mw / 2, 0, D / 2);
+    const rgt = boxMesh(mw, H - 2 * mw, D, frameMat); rgt.position.set(W / 2 - mw / 2, 0, D / 2);
+    g.add(top, bot, lft, rgt);
+  }
+  const iw = W - 2 * mw, ih = H - 2 * mw;
+  const face = noFrame ? D : D * 0.55;
+  const back = boxMesh(iw, ih, face, new THREE.MeshStandardMaterial({ color: pp > 0 ? 0xf6f4ef : 0xeeeae2, roughness: 0.95 }));
+  back.position.set(0, 0, face / 2);
+  g.add(back);
+  const aw = iw - 2 * pp, ah = ih - 2 * pp;
+  const tex0 = await getTexture(item.imageId);
+  const imgMat = new THREE.MeshStandardMaterial({ color: tex0 ? 0xffffff : 0xb9b2a6, roughness: 0.82 });
+  if (tex0) {
+    const tex = tex0.clone(); tex.needsUpdate = true;
+    const sz = imageSize(tex0);
+    if (sz) {
+      const ia = sz.w / sz.h, aa = aw / ah;
+      if (ia > aa) { tex.repeat.set(aa / ia, 1); tex.offset.set((1 - aa / ia) / 2, 0); }
+      else { tex.repeat.set(1, ia / aa); tex.offset.set(0, (1 - ia / aa) / 2); }
+    }
+    imgMat.map = tex;
+  }
+  const img = new THREE.Mesh(new THREE.PlaneGeometry(aw, ah), imgMat);
+  img.position.set(0, 0, face + 0.0015);
+  g.add(img);
+  g.position.fromArray(item.pos);
+  g.quaternion.copy(frameQuat(item.normal));
+  return g;
+}
+
+function buildBox(item) {
+  const g = new THREE.Group();
+  const L = item.L / 100, P = item.P / 100, A = Math.max(item.A, 0.5) / 100;
+  const op = item.opacity ?? 1;
+  const mat = new THREE.MeshStandardMaterial({ color: item.color, roughness: 0.85, transparent: op < 1, opacity: op, depthWrite: op >= 1 });
+  const m = boxMesh(L, A, P, mat); m.position.y = A / 2;
+  const c = new THREE.Color(item.color).multiplyScalar(0.55);
+  const edges = new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry), new THREE.LineBasicMaterial({ color: c }));
+  edges.position.y = A / 2;
+  g.add(m, edges);
+  g.position.fromArray(item.pos);
+  g.rotation.y = THREE.MathUtils.degToRad(item.rot || 0);
+  return g;
+}
+
+async function loadGlbAsset(assetId) {
+  if (!glbCache.has(assetId)) {
+    glbCache.set(assetId, (async () => {
+      const b = await Store.getBlob(assetId);
+      if (!b) return null;
+      const gltf = await new GLTFLoader().parseAsync(await b.arrayBuffer(), '');
+      const root = gltf.scene;
+      const box = new THREE.Box3().setFromObject(root);
+      const c = box.getCenter(new THREE.Vector3());
+      root.position.sub(new THREE.Vector3(c.x, box.min.y, c.z));
+      const wrap = new THREE.Group(); wrap.add(root);
+      wrap.userData.size = box.getSize(new THREE.Vector3());
+      return wrap;
+    })());
+  }
+  return glbCache.get(assetId);
+}
+async function buildGlb(item) {
+  const g = new THREE.Group();
+  const src = await loadGlbAsset(item.assetId);
+  if (src) { const c = src.clone(true); c.userData.size = src.userData.size; g.add(c); g.userData.size = src.userData.size; }
+  else g.add(boxMesh(0.5, 0.5, 0.5, new THREE.MeshStandardMaterial({ color: 0xcc5555 })));
+  g.position.fromArray(item.pos);
+  g.rotation.y = THREE.MathUtils.degToRad(item.rot || 0);
+  g.scale.setScalar(item.scale || 1);
+  return g;
+}
+
+const buildSeq = new Map();
+async function syncItem(item) {
+  const seq = (buildSeq.get(item.id) || 0) + 1; buildSeq.set(item.id, seq);
+  const obj = item.type === 'frame' ? await buildFrame(item) : item.type === 'glb' ? await buildGlb(item) : buildBox(item);
+  if (buildSeq.get(item.id) !== seq) return;          // um build mais novo já chegou
+  if (!state.items.includes(item)) return;
+  const old = itemObjs.get(item.id);
+  if (old) itemGroup.remove(old);
+  obj.userData.itemId = item.id;
+  itemGroup.add(obj); itemObjs.set(item.id, obj);
+  if (item.id === selectedId) updateSelBox();
+}
+async function rebuildItems() {
+  itemGroup.clear(); itemObjs.clear();
+  await Promise.all(state.items.map(syncItem));
+}
+function placeQuick(item) {
+  const obj = itemObjs.get(item.id); if (!obj) return;
+  obj.position.fromArray(item.pos);
+  if (item.type === 'frame') obj.quaternion.copy(frameQuat(item.normal));
+  else obj.rotation.y = THREE.MathUtils.degToRad(item.rot || 0);
+  if (item.type === 'glb') obj.scale.setScalar(item.scale || 1);
+  updateSelBox();
+}
+function updateSelBox() {
+  const obj = selectedId && itemObjs.get(selectedId);
+  selBox.visible = !!obj;
+  if (obj) { obj.updateMatrixWorld(true); selBox.box.setFromObject(obj); selBox.box.expandByScalar(0.01); }
+}
+function getItem(id) { return state.items.find(i => i.id === id); }
+function select(id) {
+  selectedId = id; updateSelBox();
+  if (tool !== 'select' && id) setTool('select');
+  else render();
+}
+function deleteItem(id) {
+  pushHistory();
+  state.items = state.items.filter(i => i.id !== id);
+  const o = itemObjs.get(id); if (o) itemGroup.remove(o); itemObjs.delete(id);
+  if (selectedId === id) select(null);
+  commit(); render();
+}
+function duplicateItem(id) {
+  const it = getItem(id); if (!it) return;
+  pushHistory();
+  const c = deep(it); c.id = uid(); c.name = (it.name || '') + ' (cópia)';
+  if (c.type === 'frame') {
+    const q = frameQuat(c.normal); const x = new THREE.Vector3(1, 0, 0).applyQuaternion(q);
+    c.pos = new THREE.Vector3().fromArray(c.pos).addScaledVector(x, c.w / 100 + 0.1).toArray();
+  } else c.pos = [c.pos[0] + 0.3, c.pos[1], c.pos[2] + 0.3];
+  state.items.push(c); syncItem(c); select(c.id); commit();
+}
+function undo() {
+  const prev = history.pop();
+  if (!prev) { toast('Nada para desfazer'); return; }
+  state.items = JSON.parse(prev);
+  if (selectedId && !getItem(selectedId)) selectedId = null;
+  rebuildItems().then(updateSelBox); commit(); render();
+}
+
+/* =====================================================================
+   Picking
+   ===================================================================== */
+const ray = new THREE.Raycaster();
+const ndc = new THREE.Vector2();
+function setRay(cx, cy) {
+  const r = canvas.getBoundingClientRect();
+  ndc.set(((cx - r.left) / r.width) * 2 - 1, -((cy - r.top) / r.height) * 2 + 1);
+  ray.setFromCamera(ndc, camera);
+}
+function hitModel(kinds) {
+  const list = modelMeshes.filter(m => m.mesh.visible && !m.faded && (!kinds || kinds.includes(m.kind))).map(m => m.mesh);
+  if (!list.length) return null;
+  const hits = ray.intersectObjects(list, false);
+  if (!hits.length) return null;
+  const h = hits[0];
+  const n = h.face ? h.face.normal.clone().transformDirection(h.object.matrixWorld) : null;
+  if (n && n.dot(ray.ray.direction) > 0) n.negate();
+  return { point: h.point.clone(), normal: n, mesh: h.object };
+}
+function hitSplats(onlyId) {
+  const list = [];
+  for (const [id, m] of splatObjs) if (m.visible && (!onlyId || id === onlyId)) list.push(m);
+  if (!list.length) return null;
+  try {
+    const hits = ray.intersectObjects(list, false);
+    return hits.length ? { point: hits[0].point.clone(), mesh: hits[0].object } : null;
+  } catch (e) { console.warn(e); return null; }
+}
+function splatSurface(cx, cy, onlyId) {
+  const offs = [[0, 0], [-10, 0], [10, 0], [0, -10], [0, 10]];
+  const pts = offs.map(([dx, dy]) => { setRay(cx + dx, cy + dy); return hitSplats(onlyId)?.point || null; });
+  setRay(cx, cy);
+  if (!pts[0]) return null;
+  let normal = null;
+  if (pts[1] && pts[2] && pts[3] && pts[4]) {
+    const a = pts[2].clone().sub(pts[1]); const b = pts[3].clone().sub(pts[4]);
+    normal = a.cross(b); if (normal.lengthSq() > 1e-12) normal.normalize(); else normal = null;
+    if (normal && normal.dot(ray.ray.direction) > 0) normal.negate();
+  }
+  return { point: pts[0], normal };
+}
+function preferSplat() { return state.view === 'foto' && splatObjs.size > 0; }
+function pickPoint(cx, cy) {
+  setRay(cx, cy);
+  if (preferSplat()) { const s = hitSplats(); if (s) return s.point; }
+  const m = hitModel(); if (m) return m.point;
+  const s = hitSplats(); if (s) return s.point;
+  return null;
+}
+function wallSurface(cx, cy) {
+  setRay(cx, cy);
+  let hit = null;
+  const m = hitModel(['wall', 'object', 'other']);
+  if (m && m.normal && Math.abs(m.normal.y) < 0.5) hit = m;
+  if (!hit && splatObjs.size) { const s = splatSurface(cx, cy); if (s && s.normal && Math.abs(s.normal.y) < 0.6) hit = s; }
+  if (!hit) return null;
+  const n = hit.normal.clone().setY(0).normalize();
+  return { point: hit.point, normal: n };
+}
+function floorPoint(cx, cy) {
+  setRay(cx, cy);
+  const m = hitModel(['floor']);
+  if (m) return m.point.setY(state.floorY);
+  const p = new THREE.Vector3();
+  if (ray.ray.intersectPlane(new THREE.Plane(UP, -state.floorY), p)) return p;
+  return null;
+}
+function hitItem(cx, cy) {
+  setRay(cx, cy);
+  const hits = ray.intersectObjects(itemGroup.children, true);
+  for (const h of hits) { for (let o = h.object; o; o = o.parent) if (o.userData.itemId) return o.userData.itemId; }
+  return null;
+}
+
+/* =====================================================================
+   Navegação
+   ===================================================================== */
+const nav = { mode: 'orbit', yaw: 0, pitch: 0, eye: 1.6, keys: new Set(), pad: new Set() };
+function setNav(mode) {
+  if (mode === nav.mode) return;
+  nav.mode = mode;
+  if (mode === 'walk') {
+    const dir = new THREE.Vector3(); camera.getWorldDirection(dir);
+    nav.yaw = Math.atan2(-dir.x, -dir.z); nav.pitch = Math.asin(clamp(dir.y, -1, 1)) * 0.5;
+    camera.position.y = state.floorY + nav.eye;
+    orbit.enabled = false;
+  } else {
+    const dir = new THREE.Vector3(); camera.getWorldDirection(dir);
+    orbit.target.copy(camera.position).addScaledVector(dir, 2);
+    orbit.enabled = true;
+  }
+  $$('[data-nav]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.nav === mode)));
+  $('#walkpad').hidden = !(mode === 'walk' && matchMedia('(pointer: coarse)').matches);
+  updateHint();
+}
+const _fw = new THREE.Vector3(), _rt = new THREE.Vector3();
+function walkStep(dt) {
+  if (nav.mode !== 'walk') return;
+  camera.quaternion.setFromEuler(new THREE.Euler(nav.pitch, nav.yaw, 0, 'YXZ'));
+  const k = nav.keys, p = nav.pad;
+  let f = 0, s = 0, u = 0;
+  if (k.has('KeyW') || k.has('ArrowUp') || p.has('f')) f += 1;
+  if (k.has('KeyS') || k.has('ArrowDown') || p.has('b')) f -= 1;
+  if (k.has('KeyD') || k.has('ArrowRight') || p.has('r')) s += 1;
+  if (k.has('KeyA') || k.has('ArrowLeft') || p.has('l')) s -= 1;
+  if (k.has('KeyE')) u += 1; if (k.has('KeyQ')) u -= 1;
+  const speed = (k.has('ShiftLeft') || k.has('ShiftRight') ? 2.6 : 1.3) * dt;
+  _fw.set(-Math.sin(nav.yaw), 0, -Math.cos(nav.yaw));
+  _rt.set(Math.cos(nav.yaw), 0, -Math.sin(nav.yaw));
+  camera.position.addScaledVector(_fw, f * speed).addScaledVector(_rt, s * speed);
+  if (u) { nav.eye = clamp(nav.eye + u * dt * 0.8, 0.3, 3.5); }
+  camera.position.y = state.floorY + nav.eye;
+}
+function sceneBox() {
+  const b = new THREE.Box3();
+  if (modelMeshes.length) b.expandByObject(modelGroup);
+  else for (const m of splatObjs.values()) if (m.visible) b.union(splatBox(m));
+  if (b.isEmpty() && itemGroup.children.length) b.expandByObject(itemGroup);
+  if (b.isEmpty()) b.set(new THREE.Vector3(-3, 0, -3), new THREE.Vector3(3, 2.6, 3));
+  return b;
+}
+function fitView(top = false) {
+  setNav('orbit');
+  const b = sceneBox(); const c = b.getCenter(new THREE.Vector3()); const size = b.getSize(new THREE.Vector3());
+  const d = Math.max(size.x, size.z, 2);
+  const tanV = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)), tanH = tanV * camera.aspect;
+  const fitDist = Math.max(size.z / 2 / tanV, size.x / 2 / tanH, 2) * 1.12;   // enquadra x e z na tela
+  orbit.target.set(c.x, state.floorY + (top ? 0 : 0.8), c.z);
+  if (top) camera.position.set(c.x, state.floorY + fitDist + 2.6, c.z + 0.001);
+  else { const k = Math.min(fitDist, d * 1.1); camera.position.set(c.x + k * 0.42, state.floorY + k * 0.62, c.z + k * 0.66); }
+  orbit.update();
+}
+function goInside(id) {
+  const m = splatObjs.get(id); if (!m) return;
+  const b = splatBox(m); const c = b.getCenter(new THREE.Vector3());
+  setNav('walk');
+  camera.position.set(c.x, state.floorY + nav.eye, c.z);
+}
+function goRoom(i) {
+  const r = currentRooms()[i]; if (!r) return;
+  setNav('walk');
+  camera.position.set(r.x, state.floorY + nav.eye, r.z);
+  if (r.lx != null) { nav.yaw = Math.atan2(-(r.lx - r.x), -(r.lz - r.z)); nav.pitch = -0.08; }
+  toast(r.name + (r.area ? ` · ${r.area.toLocaleString('pt-BR')} m²` : ''));
+}
+function refreshGoto() {
+  const sel = $('#goto');
+  const opts = ['<option value="">Ir para…</option>', '<option value="@all">Visão geral</option>', '<option value="@top">Vista de cima (planta)</option>'];
+  const rooms = currentRooms();
+  if (rooms.length) opts.push(`<optgroup label="Cômodos">${rooms.map((r, i) => `<option value="@room:${i}">${esc(r.name)}</option>`).join('')}</optgroup>`);
+  for (const s of state.splats) opts.push(`<option value="${esc(s.id)}">Dentro: ${esc(s.name)}</option>`);
+  sel.innerHTML = opts.join('');
+}
+
+/* =====================================================================
+   Medição
+   ===================================================================== */
+const measure = {
+  pts: [],
+  line: new THREE.Line(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: 0xe8b33a, depthTest: false })),
+  dots: [0, 1].map(() => new THREE.Mesh(new THREE.SphereGeometry(1, 16, 12), new THREE.MeshBasicMaterial({ color: 0xe8b33a, depthTest: false }))),
+};
+measure.line.renderOrder = 12; measure.dots.forEach(d => { d.renderOrder = 12; d.visible = false; helperGroup.add(d); });
+helperGroup.add(measure.line); measure.line.visible = false;
+function measureAdd(p) {
+  if (measure.pts.length >= 2) measure.pts = [];
+  measure.pts.push(p.clone());
+  drawMeasure(); render();
+}
+function measureClear() { measure.pts = []; drawMeasure(); }
+function drawMeasure() {
+  const [a, b] = measure.pts;
+  measure.dots.forEach((d, i) => { const p = measure.pts[i]; d.visible = !!p; if (p) d.position.copy(p); });
+  measure.line.visible = !!(a && b);
+  if (a && b) measure.line.geometry.setFromPoints([a, b]);
+  $('#measureLabel').hidden = !(a && b);
+}
+function measureDist() { const [a, b] = measure.pts; return a && b ? a.distanceTo(b) : null; }
+
+/* =====================================================================
+   Alinhamento (pares de pontos → similaridade)
+   ===================================================================== */
+const align = { picking: false, step: 'splat', pairs: [], pending: null, vertical: true, scaleMode: false, scalePts: [], markers: new THREE.Group(), gizmo: null, lastRms: null };
+helperGroup.add(align.markers);
+
+function jacobiEigen4(A) {
+  const a = A.map(r => r.slice()); const v = [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]];
+  for (let sweep = 0; sweep < 60; sweep++) {
+    let off = 0; for (let i = 0; i < 4; i++) for (let j = i + 1; j < 4; j++) off += a[i][j] * a[i][j];
+    if (off < 1e-18) break;
+    for (let p = 0; p < 4; p++) for (let q = p + 1; q < 4; q++) {
+      if (Math.abs(a[p][q]) < 1e-20) continue;
+      const theta = (a[q][q] - a[p][p]) / (2 * a[p][q]);
+      const t = Math.sign(theta || 1) / (Math.abs(theta) + Math.sqrt(theta * theta + 1));
+      const c = 1 / Math.sqrt(t * t + 1), s = t * c;
+      for (let k = 0; k < 4; k++) { const akp = a[k][p], akq = a[k][q]; a[k][p] = c * akp - s * akq; a[k][q] = s * akp + c * akq; }
+      for (let k = 0; k < 4; k++) { const apk = a[p][k], aqk = a[q][k]; a[p][k] = c * apk - s * aqk; a[q][k] = s * apk + c * aqk; }
+      for (let k = 0; k < 4; k++) { const vkp = v[k][p], vkq = v[k][q]; v[k][p] = c * vkp - s * vkq; v[k][q] = s * vkp + c * vkq; }
+    }
+  }
+  return { values: [0, 1, 2, 3].map(i => a[i][i]), vectors: v };
+}
+function solveSimilarity(src, dst, yawOnly) {
+  const n = src.length;
+  const ca = new THREE.Vector3(), cb = new THREE.Vector3();
+  src.forEach(p => ca.add(p)); dst.forEach(p => cb.add(p)); ca.divideScalar(n); cb.divideScalar(n);
+  const A = src.map(p => p.clone().sub(ca)), B = dst.map(p => p.clone().sub(cb));
+  let q;
+  if (yawOnly) {
+    let re = 0, im = 0;
+    for (let i = 0; i < n; i++) { re += A[i].z * B[i].z + A[i].x * B[i].x; im += A[i].z * B[i].x - A[i].x * B[i].z; }
+    q = new THREE.Quaternion().setFromAxisAngle(UP, Math.atan2(im, re));
+  } else {
+    const S = [[0, 0, 0], [0, 0, 0], [0, 0, 0]];
+    for (let i = 0; i < n; i++) { const a = A[i].toArray(), b = B[i].toArray(); for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++) S[r][c] += a[r] * b[c]; }
+    const [[xx, xy, xz], [yx, yy, yz], [zx, zy, zz]] = S;
+    const N = [
+      [xx + yy + zz, yz - zy, zx - xz, xy - yx],
+      [yz - zy, xx - yy - zz, xy + yx, zx + xz],
+      [zx - xz, xy + yx, -xx + yy - zz, yz + zy],
+      [xy - yx, zx + xz, yz + zy, -xx - yy + zz],
+    ];
+    const { values, vectors } = jacobiEigen4(N);
+    let best = 0; for (let i = 1; i < 4; i++) if (values[i] > values[best]) best = i;
+    const e = vectors.map(r => r[best]);
+    q = new THREE.Quaternion(e[1], e[2], e[3], e[0]).normalize();
+  }
+  let num = 0, den = 0;
+  for (let i = 0; i < n; i++) { num += A[i].clone().applyQuaternion(q).dot(B[i]); den += A[i].lengthSq(); }
+  const s = den > 0 ? num / den : 1;
+  const t = cb.clone().sub(ca.clone().applyQuaternion(q).multiplyScalar(s));
+  let err = 0;
+  for (let i = 0; i < n; i++) err += src[i].clone().applyQuaternion(q).multiplyScalar(s).add(t).distanceToSquared(dst[i]);
+  return { q, s, t, rms: Math.sqrt(err / n) };
+}
+// gancho para testes automáticos e depuração no console
+window.__ape = { solveSimilarity, get state() { return state; }, camera, orbit, THREE, splatObjs, itemObjs, get modelMeshes() { return modelMeshes; }, get align() { return align; }, measure };
+
+function markerSphere(color) {
+  const m = new THREE.Mesh(new THREE.SphereGeometry(0.035, 14, 10), new THREE.MeshBasicMaterial({ color, depthTest: false }));
+  m.renderOrder = 13; return m;
+}
+function drawAlignMarkers() {
+  align.markers.clear();
+  const add = (p, color) => { const s = markerSphere(color); s.position.copy(p); align.markers.add(s); };
+  align.pairs.forEach(pr => { add(pr.s, 0xe07a3f); add(pr.m, 0x2f9c8f); });
+  if (align.pending) add(align.pending, 0xe07a3f);
+  align.scalePts.forEach(p => add(p, 0xe8b33a));
+}
+function alignEntry() { return state.splats.find(s => s.id === alignSplatId); }
+function alignMesh() { return alignSplatId ? splatObjs.get(alignSplatId) : null; }
+function applyAlignment() {
+  const mesh = alignMesh(), entry = alignEntry(); if (!mesh || !entry) return;
+  const need = align.vertical ? 2 : 3;
+  if (align.pairs.length < need) { toast(`Marque pelo menos ${need} pares de pontos`); return; }
+  const r = solveSimilarity(align.pairs.map(p => p.s), align.pairs.map(p => p.m), align.vertical);
+  const T = new THREE.Matrix4().compose(r.t, r.q, new THREE.Vector3(r.s, r.s, r.s));
+  mesh.updateMatrix();
+  const M = T.multiply(mesh.matrix);
+  const p = new THREE.Vector3(), q = new THREE.Quaternion(), s = new THREE.Vector3();
+  M.decompose(p, q, s);
+  mesh.position.copy(p); mesh.quaternion.copy(q); mesh.scale.setScalar((s.x + s.y + s.z) / 3);
+  mesh.updateMatrixWorld(true);
+  entry.t = readT(mesh);
+  align.lastRms = r.rms;
+  align.pairs = []; align.pending = null; align.picking = false; drawAlignMarkers();
+  commit(); render();
+  toast(`Alinhado. Erro médio: ${fmtCm(r.rms)}`, 4000);
+}
+function onSplatGizmoEnd() {
+  const mesh = alignMesh(), entry = alignEntry();
+  if (mesh && entry) { entry.t = readT(mesh); commit(); render(); }
+}
+function setGizmo(mode) {
+  align.gizmo = mode;
+  const mesh = alignMesh();
+  if (!mode || !mesh) { tcontrols.detach(); }
+  else {
+    tcontrols.attach(mesh); tcontrols.setMode(mode);
+    const v = mode === 'rotate' && align.vertical;
+    tcontrols.showX = !v; tcontrols.showZ = !v; tcontrols.showY = true;
+  }
+  render();
+}
+function rotateSplat(axis, deg) {
+  const mesh = alignMesh(), entry = alignEntry(); if (!mesh) return;
+  const ax = axis === 'x' ? new THREE.Vector3(1, 0, 0) : axis === 'y' ? UP.clone() : new THREE.Vector3(0, 0, 1);
+  const c = splatBox(mesh).getCenter(new THREE.Vector3());
+  const q = new THREE.Quaternion().setFromAxisAngle(ax, THREE.MathUtils.degToRad(deg));
+  mesh.position.sub(c).applyQuaternion(q).add(c);
+  mesh.quaternion.premultiply(q); mesh.updateMatrixWorld(true);
+  entry.t = readT(mesh); commit();
+}
+function setSplatScale(k, pivot) {
+  const mesh = alignMesh(), entry = alignEntry(); if (!mesh || !(k > 0)) return;
+  const c = pivot || splatBox(mesh).getCenter(new THREE.Vector3());
+  mesh.position.sub(c).multiplyScalar(k).add(c);
+  mesh.scale.multiplyScalar(k); mesh.updateMatrixWorld(true);
+  entry.t = readT(mesh); commit();
+}
+function sceneJsonText() {
+  const out = {
+    models: sceneModels,
+    model: state.model?.id || (state.model && state.model.src.kind === 'url' ? { url: state.model.src.url } : null),
+    splats: state.splats.filter(s => s.src.kind === 'url').map(s => ({ id: s.id, name: s.name, url: s.src.url, transform: s.t })),
+    floorY: state.floorY,
+  };
+  return JSON.stringify(out, null, 2);
+}
+
+/* =====================================================================
+   Entrada do ponteiro
+   ===================================================================== */
+let down = null;
+canvas.addEventListener('pointerdown', e => {
+  if (tcontrols.dragging || tcontrols.axis) return;
+  down = { x: e.clientX, y: e.clientY, moved: false, button: e.button, drag: null, look: null };
+  if (e.button !== 0) return;
+  if (tool === 'select') {
+    const id = hitItem(e.clientX, e.clientY);
+    if (id) {
+      if (id !== selectedId) { selectedId = id; updateSelBox(); render(); }
+      startItemDrag(id, e);
+      orbit.enabled = false;
+    }
+  }
+  if (!down.drag && nav.mode === 'walk') down.look = { yaw: nav.yaw, pitch: nav.pitch };
+}, { capture: true });
+window.addEventListener('pointermove', e => {
+  if (!down) return;
+  const dx = e.clientX - down.x, dy = e.clientY - down.y;
+  if (!down.moved && Math.hypot(dx, dy) > 5) down.moved = true;
+  if (down.drag && down.moved) moveItemDrag(e);
+  else if (down.look) { nav.yaw = down.look.yaw - dx * 0.005; nav.pitch = clamp(down.look.pitch - dy * 0.005, -1.45, 1.45); }
+});
+window.addEventListener('pointerup', e => {
+  if (!down) return;
+  const d = down; down = null;
+  if (d.drag) endItemDrag(d);
+  if (!d.moved && d.button === 0 && e.target === canvas) handleClick(e.clientX, e.clientY, d);
+  orbit.enabled = nav.mode === 'orbit' && !tcontrols.dragging;
+});
+
+function startItemDrag(id, e) {
+  const item = getItem(id); if (!item) return;
+  const pos = new THREE.Vector3().fromArray(item.pos);
+  const plane = item.type === 'frame'
+    ? new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3().fromArray(item.normal), pos)
+    : new THREE.Plane(UP, -pos.y);
+  setRay(e.clientX, e.clientY);
+  const hit = new THREE.Vector3();
+  if (!ray.ray.intersectPlane(plane, hit)) hit.copy(pos);
+  down.drag = { id, plane, offset: pos.clone().sub(hit), snapshot: JSON.stringify(state.items) };
+}
+function moveItemDrag(e) {
+  const dr = down.drag; const item = getItem(dr.id); if (!item) return;
+  if (item.type === 'frame' && modelMeshes.length) {
+    const w = wallSurface(e.clientX, e.clientY);
+    if (w) {
+      item.normal = w.normal.toArray();
+      item.pos = new THREE.Vector3(w.point.x, w.point.y + dr.offset.y, w.point.z).addScaledVector(w.normal, 0.002).toArray();
+      placeQuick(item); return;
+    }
+  }
+  setRay(e.clientX, e.clientY);
+  const hit = new THREE.Vector3();
+  if (ray.ray.intersectPlane(dr.plane, hit)) {
+    item.pos = hit.add(dr.offset).toArray();
+    placeQuick(item);
+  }
+}
+function endItemDrag(d) {
+  if (d.moved) { history.push(d.drag.snapshot); commit(); render(); }
+}
+
+async function handleClick(cx, cy) {
+  if (tool === 'select') {
+    if (!hitItem(cx, cy)) { if (selectedId) { selectedId = null; updateSelBox(); render(); } }
+    return;
+  }
+  if (tool === 'frame') return placeFrame(cx, cy);
+  if (tool === 'furniture') return placeFurniture(cx, cy);
+  if (tool === 'measure') {
+    const p = pickPoint(cx, cy);
+    if (!p) { toast('Clique numa superfície do apê'); return; }
+    measureAdd(p); return;
+  }
+  if (tool === 'align') return alignClick(cx, cy);
+  if (tool === 'floor') {
+    const p = pickPoint(cx, cy);
+    if (!p) { toast('Clique no chão'); return; }
+    state.floorY = p.y; grid.position.y = p.y; commit(); setTool('select'); toast(`Piso definido`); return;
+  }
+}
+
+async function placeFrame(cx, cy) {
+  const fd = state.frameDefaults;
+  const w = wallSurface(cx, cy);
+  if (!w) { toast('Clique numa parede (superfície vertical)'); return; }
+  pushHistory();
+  const pos = w.point.clone().addScaledVector(w.normal, 0.002);
+  if (fd.auto) pos.y = state.floorY + fd.center / 100;
+  const n = state.items.filter(i => i.type === 'frame').length + 1;
+  const item = { id: uid(), type: 'frame', name: `Quadro ${n}`, imageId: fd.imageId, w: fd.w, h: fd.h, d: fd.d, style: fd.style, mw: fd.mw, pp: fd.pp, pos: pos.toArray(), normal: w.normal.toArray() };
+  state.items.push(item);
+  await syncItem(item);
+  select(item.id); commit();
+}
+async function placeFurniture(cx, cy) {
+  const p = floorPoint(cx, cy);
+  if (!p) { toast('Clique no chão'); return; }
+  pushHistory();
+  const fd = state.furnDefaults;
+  let item;
+  if (fd.glbId) item = { id: uid(), type: 'glb', name: fd.glbName || 'Modelo 3D', assetId: fd.glbId, scale: 1, rot: 0, pos: p.toArray() };
+  else item = { id: uid(), type: 'box', name: fd.name, L: fd.L, P: fd.P, A: fd.A, color: fd.color, opacity: 1, rot: 0, pos: p.toArray() };
+  state.items.push(item);
+  await syncItem(item);
+  select(item.id); commit();
+}
+function alignClick(cx, cy) {
+  if (!alignMesh()) { toast('Escolha um splat na lista primeiro'); return; }
+  if (align.scaleMode) {
+    setRay(cx, cy); const s = hitSplats(alignSplatId);
+    if (!s) { toast('Clique em cima do splat'); return; }
+    if (align.scalePts.length >= 2) align.scalePts = [];
+    align.scalePts.push(s.point); drawAlignMarkers(); render(); return;
+  }
+  if (!align.picking) return;
+  setRay(cx, cy);
+  if (align.step === 'splat') {
+    const s = hitSplats(alignSplatId);
+    if (!s) { toast('Clique num ponto do splat'); return; }
+    align.pending = s.point; align.step = 'model';
+  } else {
+    const m = hitModel();
+    if (!m) { toast('Clique no mesmo ponto na maquete'); return; }
+    align.pairs.push({ s: align.pending, m: m.point }); align.pending = null; align.step = 'splat';
+  }
+  drawAlignMarkers(); render();
+}
+
+/* teclado */
+function typing(e) { const t = e.target; return t && (t.tagName === 'INPUT' || t.tagName === 'SELECT' || t.tagName === 'TEXTAREA'); }
+window.addEventListener('keydown', e => {
+  if (typing(e)) return;
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(); return; }
+  if (nav.mode === 'walk' && /^(Key[WASDQE]|Arrow|Shift)/.test(e.code)) { nav.keys.add(e.code); if (e.code.startsWith('Arrow')) e.preventDefault(); return; }
+  const it = selectedId && getItem(selectedId);
+  if (it && (e.key === 'Delete' || e.key === 'Backspace')) { e.preventDefault(); deleteItem(it.id); return; }
+  if (it && e.key.startsWith('Arrow')) { e.preventDefault(); nudge(it, e.key, e.shiftKey ? 0.1 : 0.01); return; }
+  if (it && it.type !== 'frame' && e.key.toLowerCase() === 'r') { pushHistory(); it.rot = ((it.rot || 0) + (e.shiftKey ? -15 : 15) + 360) % 360; placeQuick(it); commit(); render(); return; }
+  if (e.key === 'Escape') { measureClear(); if (selectedId) { selectedId = null; updateSelBox(); } setTool('select'); return; }
+  const map = { v: 'select', q: 'frame', m: 'furniture', t: 'measure' };
+  if (!e.ctrlKey && !e.metaKey && map[e.key.toLowerCase()]) setTool(map[e.key.toLowerCase()]);
+});
+window.addEventListener('keyup', e => nav.keys.delete(e.code));
+window.addEventListener('blur', () => nav.keys.clear());
+function nudge(it, key, step) {
+  pushHistory();
+  const p = new THREE.Vector3().fromArray(it.pos);
+  if (it.type === 'frame') {
+    const x = new THREE.Vector3(1, 0, 0).applyQuaternion(frameQuat(it.normal));
+    if (key === 'ArrowLeft') p.addScaledVector(x, -step); if (key === 'ArrowRight') p.addScaledVector(x, step);
+    if (key === 'ArrowUp') p.y += step; if (key === 'ArrowDown') p.y -= step;
+  } else {
+    const fw = new THREE.Vector3(); camera.getWorldDirection(fw); fw.setY(0).normalize();
+    const rt = new THREE.Vector3().crossVectors(fw, UP);
+    if (key === 'ArrowUp') p.addScaledVector(fw, step); if (key === 'ArrowDown') p.addScaledVector(fw, -step);
+    if (key === 'ArrowRight') p.addScaledVector(rt, step); if (key === 'ArrowLeft') p.addScaledVector(rt, -step);
+  }
+  it.pos = p.toArray(); placeQuick(it); commit(); render();
+}
+$$('#walkpad button').forEach(b => {
+  b.addEventListener('pointerdown', e => { e.preventDefault(); nav.pad.add(b.dataset.move); });
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => b.addEventListener(ev, () => nav.pad.delete(b.dataset.move)));
+});
+
+/* =====================================================================
+   Arquivos (arrastar e soltar / abrir)
+   ===================================================================== */
+const SPLAT_EXT = ['ply', 'spz', 'splat', 'ksplat'];
+const MODEL_EXT = ['usdz', 'usdc', 'usda', 'glb', 'gltf'];
+async function leaveDemo() {
+  if (!demo) return;
+  demo = false; state.items = []; history.length = 0; itemGroup.clear(); itemObjs.clear(); selectedId = null; updateSelBox();
+  if (state.model?.src.kind === 'demo') { state.model = null; clearModel(); }
+  $('#demoBanner').hidden = true;
+}
+async function addFiles(files, intent) {
+  for (const f of files) {
+    const ext = f.name.split('.').pop().toLowerCase();
+    try {
+      if (f.type.startsWith('image/') || ['jpg', 'jpeg', 'png', 'webp', 'heic'].includes(ext)) { await setFrameImage(f); setTool('frame'); continue; }
+      if (SPLAT_EXT.includes(ext)) {
+        await leaveDemo();
+        const blobId = 'splat-' + uid(); await Store.putBlob(blobId, f);
+        let id = slug(baseName(f.name)); while (state.splats.some(s => s.id === id)) id += '-2';
+        const entry = { id, name: baseName(f.name), src: { kind: 'blob', blobId, fileName: f.name }, t: IDENT(), visible: true };
+        state.splats.push(entry);
+        progress(`Carregando ${f.name}…`);
+        await addSplatToScene(entry); progress('');
+        if (!alignSplatId) alignSplatId = id;
+        setView(modelMeshes.length ? 'ambos' : 'foto');
+        refreshGoto(); commit(); fitView();
+        toast(`Splat "${entry.name}" aberto. Use Alinhar pra encaixar na maquete.`, 4000);
+        continue;
+      }
+      if (MODEL_EXT.includes(ext)) {
+        if ((ext === 'glb' || ext === 'gltf') && intent !== 'model' && (intent === 'furniture' || tool === 'furniture')) { await setFurnitureGlb(f); continue; }
+        await leaveDemo();
+        const blobId = 'model-' + uid(); await Store.putBlob(blobId, f);
+        state.model = { src: { kind: 'blob', blobId, fileName: f.name }, name: baseName(f.name) };
+        state.hidden = [];
+        await loadModel(); await rebuildItems(); commit(); fitView();
+        toast(`Maquete "${f.name}" aberta`); continue;
+      }
+      if (ext === 'json') { await importJson(JSON.parse(await f.text())); continue; }
+      toast(`Formato não reconhecido: ${f.name}`);
+    } catch (err) { console.error(err); progress(''); toast(`Erro em ${f.name}: ${err.message}`, 5000); }
+  }
+  updateLabel(); render();
+}
+let dragDepth = 0;
+stageEl.addEventListener('dragenter', e => { e.preventDefault(); dragDepth++; $('#drop').hidden = false; });
+stageEl.addEventListener('dragover', e => e.preventDefault());
+stageEl.addEventListener('dragleave', () => { dragDepth = Math.max(0, dragDepth - 1); if (!dragDepth) $('#drop').hidden = true; });
+stageEl.addEventListener('drop', e => { e.preventDefault(); dragDepth = 0; $('#drop').hidden = true; addFiles([...(e.dataTransfer?.files || [])]); });
+$('#fileAny').addEventListener('change', e => { addFiles([...e.target.files]); e.target.value = ''; });
+$('#fileModel').addEventListener('change', e => { addFiles([...e.target.files], 'model'); e.target.value = ''; });
+$('#fileSplat').addEventListener('change', e => { addFiles([...e.target.files]); e.target.value = ''; });
+$('#fileImage').addEventListener('change', async e => { const f = e.target.files[0]; e.target.value = ''; if (f) { await setFrameImage(f, frameImageTarget); } });
+$('#fileGlb').addEventListener('change', async e => { const f = e.target.files[0]; e.target.value = ''; if (f) await setFurnitureGlb(f); });
+$('#fileJson').addEventListener('change', async e => { const f = e.target.files[0]; e.target.value = ''; if (f) { try { await importJson(JSON.parse(await f.text())); } catch (err) { toast('JSON inválido: ' + err.message); } } });
+$('#demoOpen').addEventListener('click', () => $('#fileAny').click());
+
+let frameImageTarget = null;
+async function setFrameImage(file, targetItemId) {
+  const id = 'img-' + uid();
+  await Store.putBlob(id, file);
+  const tex = await getTexture(id);
+  if (!tex) { texCache.delete(id); toast('Não consegui abrir essa imagem. Fotos HEIC do iPhone: exporte como JPG antes.', 5000); return; }
+  const sz = imageSize(tex);
+  if (targetItemId) {
+    const it = getItem(targetItemId);
+    if (it) { pushHistory(); it.imageId = id; if (sz) it.h = Math.round(it.w * sz.h / sz.w); await syncItem(it); commit(); }
+  } else {
+    const fd = state.frameDefaults; fd.imageId = id;
+    if (sz && fd.keep) fd.h = Math.round(fd.w * sz.h / sz.w);
+    commit();
+  }
+  frameImageTarget = null;
+  render();
+}
+async function setFurnitureGlb(file) {
+  const id = 'glb-' + uid();
+  await Store.putBlob(id, file);
+  state.furnDefaults.glbId = id; state.furnDefaults.glbName = baseName(file.name);
+  setTool('furniture'); commit(); render();
+  toast('Modelo pronto. Clique no chão para colocar.');
+}
+
+async function blobToDataURL(b) { return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(b); }); }
+async function dataURLToBlob(u) { return (await fetch(u)).blob(); }
+async function layoutPayload(items, name) {
+  const assets = {};
+  for (const it of items) for (const k of ['imageId', 'assetId']) {
+    if (it[k] && !assets[it[k]]) { const b = await Store.getBlob(it[k]); if (b) assets[it[k]] = await blobToDataURL(b); }
+  }
+  return { format: 'ape3d-layout', version: 1, name, items, assets };
+}
+async function importJson(data) {
+  if (data?.format === 'ape3d-layout') {
+    for (const [id, url] of Object.entries(data.assets || {})) await Store.putBlob(id, await dataURLToBlob(url));
+    const layouts = (await Store.get('layouts')) || [];
+    layouts.unshift({ id: uid(), name: data.name || 'Importado', savedAt: Date.now(), items: data.items || [] });
+    await Store.set('layouts', layouts);
+    toast('Layout importado. Abra em Layouts para carregar.'); setTab('layouts'); return;
+  }
+  if (data && Array.isArray(data.splats)) {
+    let n = 0;
+    for (const s of data.splats) {
+      const e = state.splats.find(x => x.id === s.id || x.name === s.name);
+      if (e && s.transform) { e.t = s.transform; const m = splatObjs.get(e.id); if (m) applyT(m, e.t); n++; }
+    }
+    commit(); toast(`Alinhamento aplicado em ${n} splat(s)`); return;
+  }
+  toast('Esse JSON não é um layout nem um scene.json');
+}
+let dlNs;
+async function download(name, blob) {
+  // dentro do claude.ai o download passa pela capability; rodando local (serve.py) usa um link normal
+  if (window.claude?.use) {
+    if (dlNs === undefined) dlNs = await window.claude.use('downloads').catch(() => null);
+    if (dlNs) {
+      try { const r = await dlNs.save({ filename: name, data: blob }); if (r?.status === 'saved') toast('Arquivo salvo'); }
+      catch (e) { if (e?.code !== 'declined') toast('Não deu pra salvar o arquivo aqui'); }
+      return;
+    }
+  }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+async function copyText(text, fallbackEl) {
+  try { await navigator.clipboard.writeText(text); toast('Copiado'); }
+  catch (e) { if (fallbackEl) { fallbackEl.hidden = false; fallbackEl.value = text; fallbackEl.select(); } toast('Selecione e copie o texto abaixo'); }
+}
+
+/* =====================================================================
+   Painel
+   ===================================================================== */
+const HINTS = {
+  select: () => nav.mode === 'walk' ? 'Arraste pra olhar em volta · WASD ou setas pra andar · Q/E sobe e desce' : 'Clique num quadro ou móvel pra editar · arraste pra mover',
+  frame: () => 'Clique numa parede pra pendurar o quadro',
+  furniture: () => 'Clique no chão pra colocar o móvel',
+  measure: () => 'Clique em dois pontos pra medir',
+  align: () => align.scaleMode ? 'Clique em dois pontos do splat cuja distância real você sabe'
+    : align.picking ? (align.step === 'splat' ? `Par ${align.pairs.length + 1}: clique num canto no splat` : `Par ${align.pairs.length + 1}: agora o mesmo canto na maquete`)
+    : 'Escolha o splat e use os controles do painel',
+  floor: () => 'Clique no chão do splat',
+};
+function updateHint() { $('#hint').textContent = (HINTS[tool] || (() => ''))(); }
+function setTool(t) {
+  tool = t;
+  $$('.tool').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.tool === t)));
+  if (t !== 'align') { align.picking = false; align.scaleMode = false; setGizmo(null); }
+  if (t === 'align') {
+    if (!alignSplatId && state.splats[0]) alignSplatId = state.splats[0].id;
+    if (modelMeshes.length && state.view === 'foto') setView('ambos');
+  }
+  if (t !== 'measure') measureClear();
+  canvas.style.cursor = t === 'select' ? 'default' : 'crosshair';
+  tab = 'tool'; render();
+}
+function setTab(t) { tab = t; render(); }
+
+function num(id, label, value, unit, step = 1, min = 0) {
+  return `<label class="f" for="${id}">${label} <input type="number" id="${id}" value="${value}" step="${step}" min="${min}" inputmode="decimal"><span class="unit">${unit}</span></label>`;
+}
+function styleOptions(cur) { return Object.entries(FRAME_STYLES).map(([k, v]) => `<option value="${k}"${k === cur ? ' selected' : ''}>${v.label}</option>`).join(''); }
+
+async function thumbURL(imageId) {
+  if (!imageId) return null;
+  const b = await Store.getBlob(imageId); return b ? URL.createObjectURL(b) : null;
+}
+
+function render() {
+  updateHint();
+  $$('.tabs [data-tab]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === tab)));
+  const pane = $('#pane');
+  if (tab === 'layouts') renderLayouts(pane);
+  else if (tab === 'scene') renderScene(pane);
+  else renderTool(pane);
+}
+
+function renderTool(pane) {
+  const it = selectedId && getItem(selectedId);
+  if (tool === 'select' && it) return renderInspector(pane, it);
+  if (tool === 'select') {
+    const frames = state.items.filter(i => i.type === 'frame').length, furn = state.items.length - frames;
+    pane.innerHTML = `
+      <h2>Mover e editar</h2>
+      <p>Clique num quadro ou móvel pra ver as medidas e trocar o que quiser. Arraste pra mover: quadros correm pela parede, móveis pelo chão.</p>
+      <div class="readout">Neste layout: <b>${frames}</b> quadro(s) · <b>${furn}</b> móvel(is)</div>
+      <h3>Atalhos</h3>
+      <p><kbd>Q</kbd> quadro · <kbd>M</kbd> móvel · <kbd>T</kbd> medir · <kbd>R</kbd> gira o móvel 15° · setas movem 1 cm (<kbd>Shift</kbd> 10 cm) · <kbd>Del</kbd> exclui · <kbd>Ctrl</kbd>+<kbd>Z</kbd> desfaz</p>`;
+    return;
+  }
+  if (tool === 'frame') return renderFrameTool(pane);
+  if (tool === 'furniture') return renderFurnTool(pane);
+  if (tool === 'measure') return renderMeasure(pane);
+  if (tool === 'align') return renderAlign(pane);
+  if (tool === 'floor') { pane.innerHTML = `<h2>Definir piso</h2><p>Clique no chão do splat. A altura dos quadros e dos móveis passa a contar a partir dali.</p><button class="btn" id="cancelFloor">Cancelar</button>`; $('#cancelFloor').onclick = () => setTool('select'); }
+}
+
+async function renderFrameTool(pane) {
+  const fd = state.frameDefaults;
+  pane.innerHTML = `
+    <h2>Pendurar quadro</h2>
+    <p>Escolha a imagem e as medidas externas (com moldura). Depois clique na parede.</p>
+    <img class="thumb" id="fdThumb" alt="Imagem do quadro" hidden>
+    <div class="row"><button class="btn primary" id="fdImg">${fd.imageId ? 'Trocar imagem' : 'Escolher imagem'}</button>${fd.imageId ? '<button class="btn" id="fdNoImg">Sem imagem</button>' : ''}</div>
+    <div class="grid2">${num('fdW', 'Largura', fd.w, 'cm')}${num('fdH', 'Altura', fd.h, 'cm')}</div>
+    <label class="check"><input type="checkbox" id="fdKeep" ${fd.keep ? 'checked' : ''}> Manter a proporção da imagem</label>
+    <label class="f" for="fdStyle">Moldura <select id="fdStyle">${styleOptions(fd.style)}</select></label>
+    <div class="grid3">${num('fdMw', 'Moldura', fd.mw, 'cm', 0.5)}${num('fdPp', 'Passe-partout', fd.pp, 'cm', 0.5)}${num('fdD', 'Profund.', fd.d, 'cm', 0.5)}</div>
+    <label class="check"><input type="checkbox" id="fdAuto" ${fd.auto ? 'checked' : ''}> Centro a uma altura fixa do chão</label>
+    ${num('fdC', 'Altura do centro', fd.center, 'cm do piso (padrão de galeria: 145 a 155)')}`;
+  const url = await thumbURL(fd.imageId);
+  if (url && $('#fdThumb')) { $('#fdThumb').src = url; $('#fdThumb').hidden = false; }
+  $('#fdImg').onclick = () => { frameImageTarget = null; $('#fileImage').click(); };
+  if ($('#fdNoImg')) $('#fdNoImg').onclick = () => { fd.imageId = null; commit(); render(); };
+  const bindNum = (id, key, after) => { $('#' + id).addEventListener('input', e => { const v = parseFloat(e.target.value); if (v >= 0) { fd[key] = v; after?.(key); commit(); } }); };
+  const keepRatio = async key => {
+    if (!fd.keep || !fd.imageId) return; const sz = imageSize(await getTexture(fd.imageId)); if (!sz) return;
+    if (key === 'w') { fd.h = Math.round(fd.w * sz.h / sz.w); $('#fdH').value = fd.h; }
+    else { fd.w = Math.round(fd.h * sz.w / sz.h); $('#fdW').value = fd.w; }
+  };
+  bindNum('fdW', 'w', keepRatio); bindNum('fdH', 'h', keepRatio); bindNum('fdMw', 'mw'); bindNum('fdPp', 'pp'); bindNum('fdD', 'd'); bindNum('fdC', 'center');
+  $('#fdKeep').onchange = e => { fd.keep = e.target.checked; commit(); };
+  $('#fdAuto').onchange = e => { fd.auto = e.target.checked; commit(); };
+  $('#fdStyle').onchange = e => { fd.style = e.target.value; commit(); };
+}
+
+function renderFurnTool(pane) {
+  const fd = state.furnDefaults;
+  pane.innerHTML = `
+    <h2>Colocar móvel</h2>
+    <p>Escolha um tamanho pronto ou digite as medidas. Depois clique no chão.</p>
+    <div class="chips">${PRESETS.map(p => `<button class="chip" data-preset="${p.key}" aria-pressed="${!fd.glbId && fd.preset === p.key}">${esc(p.name)}</button>`).join('')}</div>
+    <label class="f" for="ffName">Nome <input id="ffName" value="${esc(fd.name)}"></label>
+    <div class="grid3">${num('ffL', 'Largura', fd.L, 'cm')}${num('ffP', 'Profund.', fd.P, 'cm')}${num('ffA', 'Altura', fd.A, 'cm')}</div>
+    <label class="f" for="ffColor">Cor <input type="color" id="ffColor" value="${esc(fd.color)}"></label>
+    <h3>Ou um modelo 3D</h3>
+    <p>Muitas lojas e o site da IKEA oferecem modelos .glb. Ele entra no tamanho real do arquivo.</p>
+    <div class="row"><button class="btn" id="ffGlb">${fd.glbId ? 'Trocar modelo .glb' : 'Abrir modelo .glb'}</button>${fd.glbId ? `<span class="meta">${esc(fd.glbName)}</span><button class="btn sm" id="ffNoGlb">Usar caixa</button>` : ''}</div>`;
+  $$('[data-preset]').forEach(b => b.onclick = () => {
+    const p = PRESETS.find(x => x.key === b.dataset.preset);
+    Object.assign(fd, { preset: p.key, name: p.name, L: p.L, P: p.P, A: p.A, color: p.color, glbId: null, glbName: null });
+    commit(); render();
+  });
+  $('#ffName').oninput = e => { fd.name = e.target.value; commit(); };
+  for (const [id, k] of [['ffL', 'L'], ['ffP', 'P'], ['ffA', 'A']]) $('#' + id).oninput = e => { const v = parseFloat(e.target.value); if (v > 0) { fd[k] = v; fd.preset = 'livre'; commit(); } };
+  $('#ffColor').oninput = e => { fd.color = e.target.value; commit(); };
+  $('#ffGlb').onclick = () => $('#fileGlb').click();
+  if ($('#ffNoGlb')) $('#ffNoGlb').onclick = () => { fd.glbId = null; fd.glbName = null; commit(); render(); };
+}
+
+function renderMeasure(pane) {
+  const d = measureDist();
+  pane.innerHTML = `
+    <h2>Medir</h2>
+    <p>Clique em dois pontos. No modo Foto a medida sai do splat; na Maquete, das paredes do RoomPlan, que são mais precisas.</p>
+    <div class="readout">${d ? `Distância: <b>${fmtCm(d)}</b>` : 'Nenhuma medida ainda'}</div>
+    <button class="btn" id="mClear" ${d ? '' : 'disabled'}>Limpar</button>`;
+  $('#mClear').onclick = () => { measureClear(); render(); };
+}
+
+function renderAlign(pane) {
+  const entry = alignEntry(); const hasModel = modelMeshes.length > 0 && state.model?.src.kind !== 'demo';
+  if (!state.splats.length) {
+    pane.innerHTML = `<h2>Alinhar</h2><div class="empty">Abra um splat (.ply, .spz) na aba Cena ou arraste o arquivo pra cá.</div>`; return;
+  }
+  const need = align.vertical ? 2 : 3;
+  pane.innerHTML = `
+    <h2>Alinhar splat</h2>
+    <p>Cada splat sai do processamento numa posição e escala qualquer. Aqui você encaixa ele na maquete, uma vez só.</p>
+    <div class="list">${state.splats.map(s => `<div class="${s.id === alignSplatId ? 'sel' : ''}"><label class="check" style="flex:1;min-width:0"><input type="radio" name="asel" value="${esc(s.id)}" ${s.id === alignSplatId ? 'checked' : ''}><span class="name">${esc(s.name)}</span></label><span class="meta">× ${s.t.s.toFixed(3)}</span></div>`).join('')}</div>
+    ${entry ? `
+    <h3>1 · Por pontos ${hasModel ? '' : '(precisa da maquete)'}</h3>
+    <p>Marque o mesmo canto no splat e na maquete. Use cantos de piso com parede, batentes de porta ou quinas de janela, bem espalhados pelo cômodo.</p>
+    <label class="check"><input type="checkbox" id="aVert" ${align.vertical ? 'checked' : ''}> Manter o splat em pé (só gira na horizontal)</label>
+    <div class="row">
+      <button class="btn ${align.picking ? '' : 'primary'}" id="aPick" ${hasModel ? '' : 'disabled'}>${align.picking ? 'Parar de marcar' : 'Marcar pares'}</button>
+      <button class="btn primary" id="aApply" ${align.pairs.length >= need ? '' : 'disabled'}>Aplicar (${align.pairs.length}/${need}+)</button>
+      <button class="btn sm" id="aClearP" ${align.pairs.length || align.pending ? '' : 'disabled'}>Limpar pares</button>
+    </div>
+    ${align.lastRms != null ? `<div class="readout">Último alinhamento: erro médio <b>${fmtCm(align.lastRms)}</b>${align.lastRms > 0.05 ? ' · acima de 5 cm, vale refazer com mais pares' : ''}</div>` : ''}
+    <h3>2 · Ajuste fino</h3>
+    <div class="row">
+      <button class="btn ${align.gizmo === 'translate' ? 'primary' : ''}" id="aMove">Mover</button>
+      <button class="btn ${align.gizmo === 'rotate' ? 'primary' : ''}" id="aRot">Girar</button>
+      <button class="btn" id="aOff" ${align.gizmo ? '' : 'disabled'}>Soltar</button>
+    </div>
+    <div class="row">
+      <button class="btn sm" id="aFlip">Virar 180°</button>
+      <button class="btn sm" id="aX90">X +90°</button>
+      <button class="btn sm" id="aZ90">Z +90°</button>
+      <button class="btn sm" id="aY90">Y +90°</button>
+    </div>
+    <div class="grid2">${num('aScale', 'Escala', entry.t.s.toFixed(4), '× tamanho original', 0.001, 0.0001)}<div></div></div>
+    <h3>3 · Escala por medida (sem maquete)</h3>
+    <p>Clique em dois pontos do splat e informe a distância real medida com trena.</p>
+    <div class="row"><button class="btn ${align.scaleMode ? 'primary' : ''}" id="aScMode">${align.scaleMode ? 'Marcando…' : 'Marcar 2 pontos'}</button></div>
+    ${align.scalePts.length === 2 ? `<div class="readout">No splat: <b>${fmtCm(align.scalePts[0].distanceTo(align.scalePts[1]))}</b></div>
+      <div class="grid2">${num('aReal', 'Medida real', '', 'cm', 0.1)}<div style="display:flex;align-items:center"><button class="btn primary" id="aScApply">Aplicar escala</button></div></div>` : ''}
+    <h3>Guardar</h3>
+    <p>${Store.backend === 'disco' ? 'O alinhamento já fica salvo no PC automaticamente.' : 'O alinhamento fica salvo neste navegador. Pra levar pro projeto, copie o scene.json.'}</p>
+    <div class="row"><button class="btn" id="aCopy">Copiar scene.json</button><button class="btn" id="aDl">Baixar scene.json</button><button class="btn sm danger" id="aReset">Zerar posição</button></div>
+    <textarea class="code" id="aJson" hidden readonly></textarea>` : ''}`;
+  $$('input[name="asel"]').forEach(r => r.onchange = () => { alignSplatId = r.value; align.pairs = []; align.pending = null; align.scalePts = []; drawAlignMarkers(); setGizmo(align.gizmo); render(); });
+  if (!entry) return;
+  $('#aVert').onchange = e => { align.vertical = e.target.checked; setGizmo(align.gizmo); render(); };
+  $('#aPick').onclick = () => { align.picking = !align.picking; align.scaleMode = false; align.step = 'splat'; align.pending = null; setGizmo(null); if (align.picking && state.view !== 'ambos') setView('ambos'); drawAlignMarkers(); render(); };
+  $('#aApply').onclick = applyAlignment;
+  $('#aClearP').onclick = () => { align.pairs = []; align.pending = null; align.step = 'splat'; drawAlignMarkers(); render(); };
+  $('#aMove').onclick = () => { align.picking = false; align.scaleMode = false; setGizmo(align.gizmo === 'translate' ? null : 'translate'); };
+  $('#aRot').onclick = () => { align.picking = false; align.scaleMode = false; setGizmo(align.gizmo === 'rotate' ? null : 'rotate'); };
+  $('#aOff').onclick = () => setGizmo(null);
+  $('#aFlip').onclick = () => { rotateSplat('x', 180); render(); };
+  $('#aX90').onclick = () => { rotateSplat('x', 90); render(); };
+  $('#aZ90').onclick = () => { rotateSplat('z', 90); render(); };
+  $('#aY90').onclick = () => { rotateSplat('y', 90); render(); };
+  $('#aScale').onchange = e => { const v = parseFloat(e.target.value); if (v > 0) { setSplatScale(v / entry.t.s); render(); } };
+  $('#aScMode').onclick = () => { align.scaleMode = !align.scaleMode; align.picking = false; align.scalePts = []; setGizmo(null); drawAlignMarkers(); render(); };
+  if ($('#aScApply')) $('#aScApply').onclick = () => {
+    const real = parseFloat($('#aReal').value) / 100; const [a, b] = align.scalePts; const meas = a.distanceTo(b);
+    if (!(real > 0) || !(meas > 0)) { toast('Informe a medida real em cm'); return; }
+    setSplatScale(real / meas, a); align.scalePts = []; align.scaleMode = false; drawAlignMarkers(); render(); toast('Escala aplicada');
+  };
+  $('#aCopy').onclick = () => copyText(sceneJsonText(), $('#aJson'));
+  $('#aDl').onclick = () => download('scene.json', new Blob([sceneJsonText()], { type: 'application/json' }));
+  armDanger($('#aReset'), 'Confirmar: zerar', () => { const m = alignMesh(); entry.t = IDENT(); if (m) applyT(m, entry.t); commit(); render(); });
+}
+
+function armDanger(btn, armedLabel, fn) {
+  if (!btn) return;
+  const label = btn.textContent; let armed = false, t;
+  btn.onclick = () => {
+    if (!armed) { armed = true; btn.classList.add('armed'); btn.textContent = armedLabel; t = setTimeout(() => { armed = false; btn.classList.remove('armed'); btn.textContent = label; }, 3500); return; }
+    clearTimeout(t); fn();
+  };
+}
+
+async function renderInspector(pane, it) {
+  const del = `<div class="row"><button class="btn" id="iDup">Duplicar</button><button class="btn danger" id="iDel">Excluir</button><button class="btn sm" id="iDone">Fechar</button></div>`;
+  if (it.type === 'frame') {
+    const center = Math.round((it.pos[1] - state.floorY) * 1000) / 10;
+    pane.innerHTML = `
+      <h2>${esc(it.name)}</h2>
+      <img class="thumb" id="iThumb" alt="Imagem do quadro" hidden>
+      <div class="row"><button class="btn" id="iImg">${it.imageId ? 'Trocar imagem' : 'Escolher imagem'}</button><button class="btn sm" id="iRatio" ${it.imageId ? '' : 'disabled'}>Ajustar à imagem</button></div>
+      <label class="f" for="iName">Nome <input id="iName" value="${esc(it.name)}"></label>
+      <div class="grid2">${num('iW', 'Largura', it.w, 'cm')}${num('iH', 'Altura', it.h, 'cm')}</div>
+      <label class="f" for="iStyle">Moldura <select id="iStyle">${styleOptions(it.style)}</select></label>
+      <div class="grid3">${num('iMw', 'Moldura', it.mw, 'cm', 0.5)}${num('iPp', 'Passe-partout', it.pp, 'cm', 0.5)}${num('iD', 'Profund.', it.d, 'cm', 0.5)}</div>
+      ${num('iC', 'Altura do centro', center, 'cm do piso', 0.5, -500)}
+      <div class="readout">Base do quadro a <b>${fmtCm(it.pos[1] - state.floorY - it.h / 200)}</b> do piso · topo a <b>${fmtCm(it.pos[1] - state.floorY + it.h / 200)}</b></div>
+      <p>Arraste o quadro pra mover pela parede. Setas movem 1 cm.</p>
+      ${del}`;
+    const url = await thumbURL(it.imageId); if (url && $('#iThumb')) { $('#iThumb').src = url; $('#iThumb').hidden = false; }
+    $('#iImg').onclick = () => { frameImageTarget = it.id; $('#fileImage').click(); };
+    $('#iRatio').onclick = async () => { const sz = imageSize(await getTexture(it.imageId)); if (!sz) return; pushHistory(); it.h = Math.round(it.w * sz.h / sz.w); await syncItem(it); commit(); render(); };
+    bindItem(it, { iName: ['name', 'text'], iW: ['w'], iH: ['h'], iMw: ['mw'], iPp: ['pp'], iD: ['d'], iStyle: ['style', 'text'] });
+    $('#iC').onchange = e => { const v = parseFloat(e.target.value); if (Number.isFinite(v)) { pushHistory(); it.pos[1] = state.floorY + v / 100; placeQuick(it); commit(); render(); } };
+  } else if (it.type === 'box') {
+    pane.innerHTML = `
+      <h2>${esc(it.name)}</h2>
+      <label class="f" for="iName">Nome <input id="iName" value="${esc(it.name)}"></label>
+      <div class="grid3">${num('iL', 'Largura', it.L, 'cm')}${num('iP', 'Profund.', it.P, 'cm')}${num('iA', 'Altura', it.A, 'cm')}</div>
+      <div class="grid2"><label class="f" for="iColor">Cor <input type="color" id="iColor" value="${esc(it.color)}"></label>${num('iRot', 'Rotação', it.rot || 0, 'graus', 1, -360)}</div>
+      <div class="row"><button class="btn sm" data-rot="-90">−90°</button><button class="btn sm" data-rot="-15">−15°</button><button class="btn sm" data-rot="15">+15°</button><button class="btn sm" data-rot="90">+90°</button></div>
+      <label class="f" for="iOp">Transparência <input type="range" id="iOp" min="0.2" max="1" step="0.05" value="${it.opacity ?? 1}"></label>
+      <p>Arraste pra mover pelo chão. <kbd>R</kbd> gira 15°.</p>
+      ${del}`;
+    bindItem(it, { iName: ['name', 'text'], iL: ['L'], iP: ['P'], iA: ['A'], iColor: ['color', 'text'], iRot: ['rot'], iOp: ['opacity'] });
+    $$('[data-rot]').forEach(b => b.onclick = () => { pushHistory(); it.rot = (((it.rot || 0) + parseFloat(b.dataset.rot)) % 360 + 360) % 360; placeQuick(it); commit(); render(); });
+  } else {
+    const obj = itemObjs.get(it.id); const size = obj?.userData.size;
+    const wcm = size ? Math.round(size.x * (it.scale || 1) * 1000) / 10 : 0;
+    pane.innerHTML = `
+      <h2>${esc(it.name)}</h2>
+      <label class="f" for="iName">Nome <input id="iName" value="${esc(it.name)}"></label>
+      <div class="grid2">${num('iRot', 'Rotação', it.rot || 0, 'graus', 1, -360)}${num('iScale', 'Escala', it.scale || 1, '× do arquivo', 0.01, 0.001)}</div>
+      ${size ? `<div class="readout">Tamanho: <b>${cm(size.x * it.scale)} × ${cm(size.z * it.scale)} × ${cm(size.y * it.scale)} cm</b> (L × P × A)</div>
+      ${num('iWcm', 'Ajustar largura para', wcm, 'cm (muda a escala)', 0.5)}` : ''}
+      <div class="row"><button class="btn sm" data-rot="-90">−90°</button><button class="btn sm" data-rot="-15">−15°</button><button class="btn sm" data-rot="15">+15°</button><button class="btn sm" data-rot="90">+90°</button></div>
+      ${del}`;
+    bindItem(it, { iName: ['name', 'text'], iRot: ['rot'], iScale: ['scale'] });
+    if ($('#iWcm')) $('#iWcm').onchange = e => { const v = parseFloat(e.target.value); if (v > 0 && size) { pushHistory(); it.scale = v / 100 / size.x; placeQuick(it); commit(); render(); } };
+    $$('[data-rot]').forEach(b => b.onclick = () => { pushHistory(); it.rot = (((it.rot || 0) + parseFloat(b.dataset.rot)) % 360 + 360) % 360; placeQuick(it); commit(); render(); });
+  }
+  $('#iDup').onclick = () => duplicateItem(it.id);
+  armDanger($('#iDel'), 'Confirmar exclusão', () => deleteItem(it.id));
+  $('#iDone').onclick = () => { selectedId = null; updateSelBox(); render(); };
+}
+const rebuildSoon = debounce(it => { syncItem(it); commit(); }, 120);
+function bindItem(it, map) {
+  for (const [id, [key, kind]] of Object.entries(map)) {
+    const el = $('#' + id); if (!el) continue;
+    el.addEventListener('focus', () => pushHistory(), { once: true });
+    el.addEventListener('input', () => {
+      let v = el.value;
+      if (kind !== 'text') { v = parseFloat(v); if (!Number.isFinite(v)) return; }
+      it[key] = v;
+      if (key === 'rot' || key === 'scale') { placeQuick(it); commit(); }
+      else if (key === 'name') { commit(); }
+      else rebuildSoon(it);
+    });
+    if (key === 'style') el.addEventListener('change', () => { it.style = el.value; rebuildSoon(it); });
+  }
+}
+
+async function renderLayouts(pane) {
+  const layouts = (await Store.get('layouts')) || [];
+  if (tab !== 'layouts') return;
+  pane.innerHTML = `
+    <h2>Layouts</h2>
+    <p>Um layout guarda os quadros e móveis que você colocou. Salve versões pra comparar ideias, tipo "quadro grande" contra "dois pequenos".</p>
+    <div class="row"><label class="f" for="lName" style="flex:1">Nome <input id="lName" placeholder="Ex.: Sala com quadro grande"></label><button class="btn primary" id="lSave" style="align-self:flex-end">Salvar atual</button></div>
+    ${layouts.length ? `<div class="list">${layouts.map(l => `<div><span class="name">${esc(l.name)}</span><span class="meta">${l.items.length} itens · ${new Date(l.savedAt).toLocaleDateString('pt-BR')}</span>
+      <button class="btn sm" data-load="${l.id}">Abrir</button><button class="btn sm" data-exp="${l.id}">Exportar</button><button class="btn sm danger" data-del="${l.id}">Excluir</button></div>`).join('')}</div>`
+      : `<div class="empty">Nenhum layout salvo ainda. O que está na tela agora é salvo sozinho como rascunho.</div>`}
+    <div class="row"><button class="btn" id="lImport">Importar layout (.json)</button><button class="btn danger" id="lClear" ${state.items.length ? '' : 'disabled'}>Limpar tudo da tela</button></div>
+    <textarea class="code" id="lJson" hidden readonly></textarea>`;
+  $('#lSave').onclick = async () => {
+    const name = $('#lName').value.trim() || `Layout ${layouts.length + 1}`;
+    layouts.unshift({ id: uid(), name, savedAt: Date.now(), items: deep(state.items) });
+    await Store.set('layouts', layouts); toast(`"${name}" salvo`); render();
+  };
+  $$('[data-load]').forEach(b => b.onclick = async () => {
+    const l = layouts.find(x => x.id === b.dataset.load); if (!l) return;
+    pushHistory(); await leaveDemo(); state.items = deep(l.items); selectedId = null; updateSelBox();
+    await rebuildItems(); commit(); toast(`"${l.name}" aberto`); render();
+  });
+  $$('[data-exp]').forEach(b => b.onclick = async () => {
+    const l = layouts.find(x => x.id === b.dataset.exp); if (!l) return;
+    const payload = JSON.stringify(await layoutPayload(l.items, l.name));
+    download(slug(l.name) + '.json', new Blob([payload], { type: 'application/json' }));
+    if (payload.length < 3e6) { const ta = $('#lJson'); ta.hidden = false; ta.value = payload; }
+  });
+  $$('[data-del]').forEach(b => armDanger(b, 'Confirmar', async () => {
+    const rest = layouts.filter(x => x.id !== b.dataset.del); await Store.set('layouts', rest); render();
+  }));
+  $('#lImport').onclick = () => $('#fileJson').click();
+  armDanger($('#lClear'), 'Confirmar: limpar', async () => { pushHistory(); state.items = []; selectedId = null; updateSelBox(); await rebuildItems(); commit(); render(); });
+}
+
+async function switchModel(id) {
+  const m = sceneModels.find(x => x.id === id); if (!m) return;
+  await leaveDemo();
+  state.model = modelFromEntry(m);
+  await loadModel(); refreshGoto(); updateLabel(); updateBanner(); commit(); fitView(); render();
+  toast(m.name);
+}
+function renderScene(pane) {
+  const objs = modelMeshes.filter(m => m.kind === 'object');
+  const opts = [...new Map(modelMeshes.filter(m => m.optKey).map(m => [m.optKey, m.optLabel])).entries()];
+  const modelName = state.model ? (state.model.src.kind === 'demo' ? 'Apê de exemplo' : state.model.name || state.model.src.fileName || state.model.src.url) : null;
+  const fromPlan = state.model?.source === 'planta';
+  pane.innerHTML = `
+    <h2>Cena</h2>
+    <p>Arquivos abertos aqui ficam guardados ${Store.backend === 'disco' ? 'na pasta do projeto no PC' : Store.backend === 'navegador' ? 'neste navegador' : 'só até fechar a página'}.</p>
+    <h3>Maquete</h3>
+    ${sceneModels.length ? `<div class="list">${sceneModels.map(m => `<div class="${m.id === state.model?.id ? 'sel' : ''}"><label class="check" style="flex:1;min-width:0"><input type="radio" name="smodel" value="${esc(m.id)}" ${m.id === state.model?.id ? 'checked' : ''}><span class="name">${esc(m.name)}</span></label></div>`).join('')}${state.model && !state.model.id ? `<div class="sel"><span class="name">${esc(modelName)}</span><span class="meta">arquivo aberto</span></div>` : ''}</div>`
+      : `<div class="list"><div><span class="name">${modelName ? esc(modelName) : 'Nenhuma'}</span>${modelName ? `<span class="meta">${modelMeshes.filter(m => m.kind === 'wall').length} paredes</span>` : ''}</div></div>`}
+    ${fromPlan ? '<p>Feita a partir da planta do manual. As medidas podem variar alguns centímetros da obra; o escaneamento do RoomPlan substitui ela quando estiver pronto.</p>' : ''}
+    <div class="row"><button class="btn" id="sModel">Abrir .usdz ou .glb</button></div>
+    ${opts.length ? `<h3>Paredes e portas opcionais</h3><p>Desmarque pra ver o apê sem elas.</p>
+      <div class="list">${opts.map(([k, l]) => `<div><label class="check" style="flex:1"><input type="checkbox" data-hide="${esc(k)}" ${state.hidden.includes(k) ? '' : 'checked'}><span class="name">${esc(l)}</span></label></div>`).join('')}</div>` : ''}
+    <h3>Splats (fotorrealista)</h3>
+    ${state.splats.length ? `<div class="list">${state.splats.map(s => `<div><label class="check" style="flex:1;min-width:0"><input type="checkbox" data-vis="${esc(s.id)}" ${s.visible !== false ? 'checked' : ''}><span class="name">${esc(s.name)}</span></label><button class="btn sm" data-go="${esc(s.id)}">Entrar</button><button class="btn sm danger" data-rm="${esc(s.id)}">Tirar</button></div>`).join('')}</div>` : '<div class="empty">Nenhum splat aberto.</div>'}
+    <div class="row"><button class="btn" id="sSplat">Abrir .ply / .spz</button></div>
+    ${objs.length ? `<h3>${fromPlan ? 'Móveis fixos da planta' : 'Móveis do escaneamento'}</h3><p>Esconda os que você quer substituir. Vale na Maquete e no Raio-X.</p>
+      <div class="list">${objs.map(o => `<div><label class="check" style="flex:1"><input type="checkbox" data-hide="${esc(o.key)}" ${state.hidden.includes(o.key) ? '' : 'checked'}><span class="name">${esc(o.label)}</span></label></div>`).join('')}</div>` : ''}
+    <h3>Luz dos objetos</h3>
+    <label class="f" for="sLight">Combine com a luz do splat <input type="range" id="sLight" min="0.3" max="2.5" step="0.05" value="${state.light}"></label>
+    <h3>Piso</h3>
+    <div class="row"><span class="readout" style="flex:1">Piso em y = <b>${state.floorY.toFixed(3)} m</b></span><button class="btn" id="sFloor" ${splatObjs.size ? '' : 'disabled'}>Clicar no chão</button></div>
+    <p>Armazenamento: <b>${Store.backend}</b>.</p>`;
+  $('#sModel').onclick = () => $('#fileModel').click();
+  $('#sSplat').onclick = () => $('#fileSplat').click();
+  $$('input[name="smodel"]').forEach(r => r.onchange = () => switchModel(r.value));
+  $$('[data-vis]').forEach(c => c.onchange = () => { const s = state.splats.find(x => x.id === c.dataset.vis); s.visible = c.checked; applyView(); commit(); });
+  $$('[data-go]').forEach(b => b.onclick = () => goInside(b.dataset.go));
+  $$('[data-rm]').forEach(b => armDanger(b, 'Confirmar', () => removeSplat(b.dataset.rm)));
+  $$('[data-hide]').forEach(c => c.onchange = () => { const k = c.dataset.hide; state.hidden = c.checked ? state.hidden.filter(x => x !== k) : [...state.hidden, k]; applyView(); commit(); });
+  $('#sLight').oninput = e => { state.light = parseFloat(e.target.value); applyLight(); commit(); };
+  $('#sFloor').onclick = () => setTool('floor');
+}
+
+/* barra superior */
+$$('[data-view]').forEach(b => b.onclick = () => setView(b.dataset.view));
+$$('[data-nav]').forEach(b => b.onclick = () => setNav(b.dataset.nav));
+$$('.tool').forEach(b => b.onclick = () => setTool(b.dataset.tool));
+$$('.tabs [data-tab]').forEach(b => b.onclick = () => setTab(b.dataset.tab));
+$('#undoBtn').onclick = undo;
+$('#goto').onchange = e => {
+  const v = e.target.value; e.target.value = '';
+  if (v === '@all') fitView(); else if (v === '@top') fitView(true); else if (v.startsWith('@room:')) goRoom(+v.slice(6)); else if (v) goInside(v);
+};
+$('#shotBtn').onclick = () => {
+  const vis = [selBox.visible, tcontrols.getHelper().visible]; selBox.visible = false; tcontrols.getHelper().visible = false;
+  renderer.render(scene, camera);
+  canvas.toBlob(blob => {
+    selBox.visible = vis[0]; tcontrols.getHelper().visible = vis[1];
+    if (!blob) return;
+    const url = URL.createObjectURL(blob);
+    const m = document.createElement('div'); m.className = 'modal';
+    m.innerHTML = `<div><img src="${url}" alt="Captura da vista"><div class="row"><button class="btn primary" id="shotDl">Baixar PNG</button><button class="btn" id="shotClose">Fechar</button><span class="meta">Se o download não começar, clique com o botão direito na imagem e salve.</span></div></div>`;
+    document.body.appendChild(m);
+    $('#shotDl', m).onclick = () => download(`ape-3d-${new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-')}.png`, blob);
+    const close = () => { m.remove(); URL.revokeObjectURL(url); };
+    $('#shotClose', m).onclick = close; m.onclick = e => { if (e.target === m) close(); };
+  }, 'image/png');
+};
+function bannerSeen() { try { return localStorage.getItem('ape3d-banner-planta') === '1'; } catch (e) { return false; } }
+function updateBanner() {
+  const b = $('#demoBanner');
+  if (demo) { b.hidden = false; return; }
+  if (state.model?.source === 'planta' && !state.splats.length && !bannerSeen()) {
+    $('#bannerText').innerHTML = '<b>Maquete montada a partir da planta do manual.</b> Use <b>Ir para</b> pra entrar num cômodo. As medidas são do desenho e podem variar alguns centímetros: confira com trena o que for comprar no limite.';
+    $('#demoOpen').hidden = true; $('#bannerClose').hidden = false; b.hidden = false;
+  } else b.hidden = true;
+}
+$('#bannerClose').onclick = () => { try { localStorage.setItem('ape3d-banner-planta', '1'); } catch (e) { /* sem storage */ } $('#demoBanner').hidden = true; };
+function updateLabel() {
+  const parts = [];
+  if (demo) parts.push('exemplo');
+  else {
+    if (state.model) parts.push(state.model.source === 'planta' ? (state.model.name || 'planta').replace('Planta do manual: ', 'planta ') : 'maquete');
+    if (state.splats.length) parts.push(`${state.splats.length} splat${state.splats.length > 1 ? 's' : ''}`);
+  }
+  $('#sceneLabel').textContent = parts.join(' · ') || 'vazio';
+}
+
+/* =====================================================================
+   Laço de renderização
+   ===================================================================== */
+let lastT = performance.now();
+const _mid = new THREE.Vector3();
+renderer.setAnimationLoop(() => {
+  const now = performance.now(); const dt = Math.min((now - lastT) / 1000, 0.1); lastT = now;
+  if (nav.mode === 'walk') walkStep(dt); else orbit.update();
+  dollhouse();
+  const d = measureDist();
+  if (d) {
+    const lbl = $('#measureLabel');
+    _mid.copy(measure.pts[0]).add(measure.pts[1]).multiplyScalar(0.5).project(camera);
+    const r = canvas.getBoundingClientRect();
+    if (_mid.z < 1) {
+      lbl.hidden = false; lbl.textContent = fmtCm(d);
+      lbl.style.left = `${(_mid.x * 0.5 + 0.5) * r.width}px`; lbl.style.top = `${(-_mid.y * 0.5 + 0.5) * r.height}px`;
+    } else lbl.hidden = true;
+    const s = camera.position.distanceTo(measure.pts[0]) * 0.006;
+    measure.dots.forEach(m => m.scale.setScalar(Math.max(0.006, s)));
+  }
+  renderer.render(scene, camera);
+});
+
+/* =====================================================================
+   Início
+   ===================================================================== */
+async function boot() {
+  resize(); themeColors(); applyLight();
+  await Store.init();
+  const saved = await Store.get('current');
+  let sj = null;
+  try { const r = await fetch('scene.json', { cache: 'no-store' }); if (r.ok) sj = await r.json(); } catch (e) { /* sem scene.json */ }
+  if (saved) {
+    Object.assign(state, {
+      items: saved.items || [], hidden: saved.hidden || [], view: saved.view || 'foto', light: saved.light ?? 1,
+      floorY: saved.floorY ?? 0, frameDefaults: { ...state.frameDefaults, ...(saved.frameDefaults || {}) }, furnDefaults: { ...state.furnDefaults, ...(saved.furnDefaults || {}) },
+    });
+  }
+  const nm = normalizeModels(sj);
+  sceneModels = nm.list;
+  if (sj && (nm.list.length || (sj.splats || []).length)) {
+    const savedSplats = saved?.splats || [];
+    const pick = sceneModels.find(m => m.id === saved?.modelId) || sceneModels.find(m => m.id === nm.def);
+    state.model = saved?.model?.src?.kind === 'blob' ? saved.model : pick ? modelFromEntry(pick) : (saved?.model || null);
+    state.splats = (sj.splats || []).map(s => {
+      const id = s.id || slug(s.name || s.url);
+      const prev = savedSplats.find(x => x.id === id && x.src.kind === 'url');
+      return { id, name: s.name || id, src: { kind: 'url', url: s.url }, t: prev?.t || s.transform || IDENT(), visible: prev ? prev.visible !== false : true };
+    });
+    for (const s of savedSplats) if (s.src.kind === 'blob' && !state.splats.some(x => x.id === s.id)) state.splats.push(s);
+  } else if (saved && (saved.model || (saved.splats || []).length || (saved.items || []).length)) {
+    state.model = saved.model || null; state.splats = saved.splats || [];
+  } else {
+    demo = true;
+    state.model = { src: { kind: 'demo' }, name: 'Apê de exemplo' };
+    state.view = 'maquete';
+    const art = await demoArtBlob(); await Store.putBlob('demo-art', art);
+    state.items = [
+      { id: 'demo-quadro', type: 'frame', name: 'Quadro da sala', imageId: 'demo-art', w: 60, h: 80, d: 3, style: 'carvalho', mw: 2.5, pp: 4, pos: [-1.8, 1.5, 2.7 - 0.06 - 0.002], normal: [0, 0, -1] },
+      { id: 'demo-tapete', type: 'box', name: 'Tapete', L: 200, P: 250, A: 1, color: '#b7a58a', opacity: 1, rot: 90, pos: [-1.8, 0, 0.9] },
+      { id: 'demo-poltrona', type: 'box', name: 'Poltrona', L: 78, P: 80, A: 90, color: '#a9734a', opacity: 1, rot: 35, pos: [-3.4, 0, 0.9] },
+    ];
+    $('#demoBanner').hidden = false;
+  }
+  if (state.splats.length) alignSplatId = state.splats[0].id;
+  if (!state.splats.length && state.view !== 'maquete') state.view = 'maquete';   // sem splat, a vista Foto fica vazia
+  updateLabel();
+  updateBanner();
+  await loadModel();
+  if (!modelMeshes.length) grid.position.y = state.floorY;
+  await loadSplats();
+  applyView();
+  await rebuildItems();
+  refreshGoto();
+  fitView();
+  render();
+}
+boot().catch(e => { console.error(e); toast('Erro ao iniciar: ' + e.message, 8000); });
+</script>

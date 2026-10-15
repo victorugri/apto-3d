@@ -1,0 +1,960 @@
+{
+ "nome": "Vista da Gávea — apartamento final 01",
+ "fonte": "Manual do proprietário, planta técnica da p.10 (medidas tiradas do desenho; podem variar alguns cm)",
+ "unidade": "cm",
+ "pe_direito": 260,
+ "tipos_abertura": {
+  "porta": {
+   "base": 0,
+   "topo": 210,
+   "vidro": false,
+   "batente": true
+  },
+  "porta_entrada": {
+   "base": 0,
+   "topo": 210,
+   "vidro": false,
+   "batente": true
+  },
+  "porta_vidro": {
+   "base": 0,
+   "topo": 220,
+   "vidro": true,
+   "batente": false
+  },
+  "janela_quarto": {
+   "base": 100,
+   "topo": 220,
+   "vidro": true
+  },
+  "janela_banho": {
+   "base": 150,
+   "topo": 210,
+   "vidro": true
+  },
+  "janela_cozinha": {
+   "base": 110,
+   "topo": 210,
+   "vidro": true
+  }
+ },
+ "guarda_corpo_altura": 110,
+ "comodos": [
+  {
+   "nome": "Sacada da suíte master",
+   "retangulos": [
+    [
+     405,
+     21,
+     676,
+     115
+    ]
+   ]
+  },
+  {
+   "nome": "Suíte master",
+   "retangulos": [
+    [
+     371,
+     135,
+     676,
+     476
+    ],
+    [
+     582,
+     476,
+     676,
+     557
+    ]
+   ]
+  },
+  {
+   "nome": "Closet",
+   "retangulos": [
+    [
+     361,
+     476,
+     568,
+     736
+    ]
+   ]
+  },
+  {
+   "nome": "Banho da suíte master",
+   "retangulos": [
+    [
+     691,
+     106,
+     951,
+     294
+    ]
+   ]
+  },
+  {
+   "nome": "Suíte 2",
+   "retangulos": [
+    [
+     691,
+     310,
+     951,
+     680
+    ]
+   ]
+  },
+  {
+   "nome": "Banho da suíte 2",
+   "retangulos": [
+    [
+     691,
+     696,
+     951,
+     826
+    ]
+   ]
+  },
+  {
+   "nome": "Banho da suíte 1",
+   "retangulos": [
+    [
+     691,
+     840,
+     951,
+     971
+    ]
+   ]
+  },
+  {
+   "nome": "Hall íntimo",
+   "retangulos": [
+    [
+     582,
+     569,
+     676,
+     906
+    ],
+    [
+     346,
+     751,
+     582,
+     906
+    ],
+    [
+     592,
+     906,
+     676,
+     971
+    ]
+   ]
+  },
+  {
+   "nome": "Hall de entrada",
+   "retangulos": [
+    [
+     236,
+     657,
+     346,
+     855
+    ]
+   ]
+  },
+  {
+   "nome": "Sala",
+   "retangulos": [
+    [
+     31,
+     855,
+     346,
+     1554
+    ],
+    [
+     346,
+     906,
+     415,
+     1554
+    ],
+    [
+     415,
+     1455,
+     521,
+     1554
+    ]
+   ]
+  },
+  {
+   "nome": "Suíte 1",
+   "retangulos": [
+    [
+     430,
+     920,
+     580,
+     1266
+    ],
+    [
+     580,
+     985,
+     877,
+     1266
+    ]
+   ]
+  },
+  {
+   "nome": "Lavabo",
+   "retangulos": [
+    [
+     430,
+     1279,
+     562,
+     1442
+    ]
+   ]
+  },
+  {
+   "nome": "Área de serviço",
+   "retangulos": [
+    [
+     576,
+     1279,
+     877,
+     1440
+    ]
+   ]
+  },
+  {
+   "nome": "Sacada da suíte 1",
+   "retangulos": [
+    [
+     890,
+     994,
+     990,
+     1437
+    ]
+   ]
+  },
+  {
+   "nome": "Cozinha",
+   "retangulos": [
+    [
+     537,
+     1455,
+     952,
+     1581
+    ],
+    [
+     576,
+     1581,
+     952,
+     1766
+    ]
+   ]
+  },
+  {
+   "nome": "Varanda gourmet",
+   "retangulos": [
+    [
+     31,
+     1581,
+     561,
+     1829
+    ]
+   ]
+  }
+ ],
+ "paredes": [
+  {
+   "nome": "Parede externa suíte master",
+   "retangulo": [
+    345,
+    0,
+    371,
+    476
+   ],
+   "aberturas": []
+  },
+  {
+   "nome": "Nicho técnico",
+   "retangulo": [
+    371,
+    0,
+    405,
+    15
+   ],
+   "aberturas": []
+  },
+  {
+   "nome": "Nicho técnico",
+   "retangulo": [
+    392,
+    15,
+    405,
+    118
+   ],
+   "aberturas": []
+  },
+  {
+   "nome": "Parede suíte master / sacada",
+   "retangulo": [
+    371,
+    115,
+    676,
+    135
+   ],
+   "aberturas": [
+    {
+     "de": 504,
+     "ate": 668,
+     "tipo": "porta_vidro"
+    }
+   ]
+  },
+  {
+   "nome": "Parede externa banho master",
+   "retangulo": [
+    676,
+    86,
+    971,
+    106
+   ],
+   "aberturas": []
+  },
+  {
+   "nome": "Parede suíte master / banhos",
+   "retangulo": [
+    676,
+    106,
+    691,
+    971
+   ],
+   "aberturas": [
+    {
+     "de": 178,
+     "ate": 253,
+     "tipo": "porta"
+    },
+    {
+     "de": 592,
+     "ate": 670,
+     "tipo": "porta"
+    }
+   ]
+  },
+  {
+   "nome": "Parede externa lateral",
+   "retangulo": [
+    951,
+    106,
+    971,
+    971
+   ],
+   "aberturas": [
+    {
+     "de": 160,
+     "ate": 241,
+     "tipo": "janela_banho"
+    },
+    {
+     "de": 519,
+     "ate": 671,
+     "tipo": "janela_quarto"
+    },
+    {
+     "de": 719,
+     "ate": 801,
+     "tipo": "janela_banho"
+    },
+    {
+     "de": 865,
+     "ate": 946,
+     "tipo": "janela_banho"
+    }
+   ]
+  },
+  {
+   "nome": "Parede banho master / suíte 2",
+   "retangulo": [
+    691,
+    294,
+    951,
+    310
+   ],
+   "aberturas": []
+  },
+  {
+   "nome": "Parede suíte 2 / banho",
+   "retangulo": [
+    691,
+    680,
+    951,
+    696
+   ],
+   "aberturas": [
+    {
+     "de": 726,
+     "ate": 814,
+     "tipo": "porta"
+    }
+   ]
+  },
+  {
+   "nome": "Parede entre banhos",
+   "retangulo": [
+    691,
+    826,
+    951,
+    840
+   ],
+   "aberturas": []
+  },
+  {
+   "nome": "Parede banho / suíte 1",
+   "retangulo": [
+    579,
+    971,
+    877,
+    985
+   ],
+   "aberturas": [
+    {
+     "de": 712,
+     "ate": 784,
+     "tipo": "porta"
+    }
+   ]
+  },
+  {
+   "nome": "Parede sacada suíte 1",
+   "retangulo": [
+    877,
+    971,
+    1012,
+    994
+   ],
+   "aberturas": []
+  },
+  {
+   "nome": "Parede closet",
+   "retangulo": [
+    346,
+    476,
+    361,
+    751
+   ],
+   "aberturas": []
+  },
+  {
+   "nome": "Parede closet",
+   "retangulo": [
+    568,
+    476,
+    582,
+    751
+   ],
+   "aberturas": []
+  },
+  {
+   "nome": "Parede closet / hall",
+   "retangulo": [
+    346,
+    736,
+    582,
+    751
+   ],
+   "aberturas": []
+  },
+  {
+   "nome": "Porta suíte master",
+   "retangulo": [
+    582,
+    557,
+    676,
+    569
+   ],
+   "aberturas": [
+    {
+     "de": 585,
+     "ate": 674,
+     "tipo": "porta"
+    }
+   ]
+  },
+  {
+   "nome": "Parede da entrada",
+   "retangulo": [
+    210,
+    635,
+    346,
+    657
+   ],
+   "aberturas": [
+    {
+     "de": 239,
+     "ate": 343,
+     "tipo": "porta_entrada"
+    }
+   ]
+  },
+  {
+   "nome": "Parede externa entrada",
+   "retangulo": [
+    210,
+    657,
+    236,
+    855
+   ],
+   "aberturas": []
+  },
+  {
+   "nome": "Parede externa sala",
+   "retangulo": [
+    10,
+    835,
+    236,
+    855
+   ],
+   "aberturas": []
+  },
+  {
+   "nome": "Parede externa sala",
+   "retangulo": [
+    10,
+    855,
+    31,
+    1766
+   ],
+   "aberturas": []
+  },
+  {
+   "nome": "Parede hall / suíte 1",
+   "retangulo": [
+    415,
+    906,
+    579,
+    920
+   ],
+   "aberturas": [
+    {
+     "de": 502,
+     "ate": 576,
+     "tipo": "porta"
+    }
+   ]
+  },
+  {
+   "nome": "Parede roupeiro",
+   "retangulo": [
+    579,
+    906,
+    592,
+    971
+   ],
+   "aberturas": []
+  },
+  {
+   "nome": "Parede sala / suíte 1",
+   "retangulo": [
+    415,
+    920,
+    430,
+    1455
+   ],
+   "aberturas": []
+  },
+  {
+   "nome": "Parede suíte 1 / lavabo",
+   "retangulo": [
+    415,
+    1266,
+    890,
+    1279
+   ],
+   "aberturas": []
+  },
+  {
+   "nome": "Parede suíte 1 / sacada",
+   "retangulo": [
+    877,
+    985,
+    890,
+    1440
+   ],
+   "aberturas": [
+    {
+     "de": 1046,
+     "ate": 1167,
+     "tipo": "porta_vidro"
+    },
+    {
+     "de": 1303,
+     "ate": 1393,
+     "tipo": "porta_vidro"
+    }
+   ]
+  },
+  {
+   "nome": "Parede lavabo / serviço",
+   "retangulo": [
+    562,
+    1279,
+    576,
+    1442
+   ],
+   "aberturas": []
+  },
+  {
+   "nome": "Parede lavabo",
+   "retangulo": [
+    415,
+    1442,
+    576,
+    1455
+   ],
+   "aberturas": [
+    {
+     "de": 445,
+     "ate": 516,
+     "tipo": "porta"
+    }
+   ]
+  },
+  {
+   "nome": "Parede serviço / cozinha",
+   "retangulo": [
+    576,
+    1440,
+    890,
+    1455
+   ],
+   "aberturas": [
+    {
+     "de": 787,
+     "ate": 860,
+     "tipo": "porta"
+    }
+   ]
+  },
+  {
+   "nome": "Parede sacada suíte 1",
+   "retangulo": [
+    890,
+    1437,
+    1012,
+    1456
+   ],
+   "aberturas": []
+  },
+  {
+   "nome": "Parede sala / cozinha",
+   "retangulo": [
+    521,
+    1455,
+    537,
+    1554
+   ],
+   "aberturas": [
+    {
+     "de": 1468,
+     "ate": 1546,
+     "tipo": "porta"
+    }
+   ]
+  },
+  {
+   "nome": "Parede sala / cozinha",
+   "retangulo": [
+    521,
+    1554,
+    576,
+    1581
+   ],
+   "aberturas": []
+  },
+  {
+   "nome": "Parede varanda / cozinha",
+   "retangulo": [
+    561,
+    1581,
+    576,
+    1766
+   ],
+   "aberturas": [
+    {
+     "de": 1625,
+     "ate": 1719,
+     "tipo": "porta_vidro"
+    }
+   ]
+  },
+  {
+   "nome": "Parede externa cozinha",
+   "retangulo": [
+    952,
+    1455,
+    971,
+    1790
+   ],
+   "aberturas": []
+  },
+  {
+   "nome": "Parede externa cozinha",
+   "retangulo": [
+    561,
+    1766,
+    971,
+    1790
+   ],
+   "aberturas": [
+    {
+     "de": 726,
+     "ate": 878,
+     "tipo": "janela_cozinha"
+    }
+   ]
+  },
+  {
+   "nome": "Parede sala / varanda",
+   "retangulo": [
+    31,
+    1554,
+    120,
+    1581
+   ],
+   "aberturas": []
+  },
+  {
+   "nome": "Pilar",
+   "retangulo": [
+    0,
+    1764,
+    42,
+    1851
+   ],
+   "aberturas": []
+  }
+ ],
+ "opcionais": [
+  {
+   "nome": "Porta de vidro entre sala e varanda",
+   "retangulo": [
+    120,
+    1554,
+    521,
+    1581
+   ],
+   "aberturas": [
+    {
+     "de": 120,
+     "ate": 521,
+     "tipo": "porta_vidro"
+    }
+   ]
+  }
+ ],
+ "guarda_corpos": [
+  {
+   "nome": "Guarda-corpo",
+   "retangulo": [
+    405,
+    0,
+    691,
+    21
+   ]
+  },
+  {
+   "nome": "Guarda-corpo",
+   "retangulo": [
+    676,
+    21,
+    691,
+    86
+   ]
+  },
+  {
+   "nome": "Guarda-corpo",
+   "retangulo": [
+    990,
+    994,
+    1012,
+    1437
+   ]
+  },
+  {
+   "nome": "Guarda-corpo",
+   "retangulo": [
+    42,
+    1829,
+    582,
+    1851
+   ]
+  },
+  {
+   "nome": "Guarda-corpo",
+   "retangulo": [
+    561,
+    1790,
+    582,
+    1829
+   ]
+  }
+ ],
+ "moveis_fixos": [
+  {
+   "nome": "Armário do closet (esq.)",
+   "retangulo": [
+    361,
+    478,
+    424,
+    736
+   ],
+   "altura": 240
+  },
+  {
+   "nome": "Armário do closet (dir.)",
+   "retangulo": [
+    504,
+    478,
+    568,
+    736
+   ],
+   "altura": 240
+  },
+  {
+   "nome": "Armário da suíte 2",
+   "retangulo": [
+    691,
+    310,
+    951,
+    374
+   ],
+   "altura": 240
+  },
+  {
+   "nome": "Armário da suíte 1",
+   "retangulo": [
+    430,
+    920,
+    494,
+    1266
+   ],
+   "altura": 240
+  },
+  {
+   "nome": "Roupeiro do hall",
+   "retangulo": [
+    592,
+    906,
+    676,
+    971
+   ],
+   "altura": 240
+  },
+  {
+   "nome": "Bancada do banho master",
+   "retangulo": [
+    691,
+    106,
+    860,
+    161
+   ],
+   "altura": 90
+  },
+  {
+   "nome": "Bancada do banho da suíte 2",
+   "retangulo": [
+    691,
+    774,
+    786,
+    826
+   ],
+   "altura": 90
+  },
+  {
+   "nome": "Bancada do banho da suíte 1",
+   "retangulo": [
+    691,
+    840,
+    786,
+    891
+   ],
+   "altura": 90
+  },
+  {
+   "nome": "Bancada do lavabo",
+   "retangulo": [
+    516,
+    1279,
+    562,
+    1442
+   ],
+   "altura": 90
+  },
+  {
+   "nome": "Tanque",
+   "retangulo": [
+    755,
+    1279,
+    877,
+    1336
+   ],
+   "altura": 90
+  },
+  {
+   "nome": "Lavadora",
+   "retangulo": [
+    687,
+    1281,
+    750,
+    1338
+   ],
+   "altura": 85
+  },
+  {
+   "nome": "Bancada do cooktop",
+   "retangulo": [
+    890,
+    1460,
+    952,
+    1766
+   ],
+   "altura": 90
+  },
+  {
+   "nome": "Bancada da pia",
+   "retangulo": [
+    726,
+    1706,
+    890,
+    1766
+   ],
+   "altura": 90
+  },
+  {
+   "nome": "Geladeira",
+   "retangulo": [
+    587,
+    1694,
+    661,
+    1766
+   ],
+   "altura": 185
+  },
+  {
+   "nome": "Churrasqueira",
+   "retangulo": [
+    31,
+    1581,
+    120,
+    1706
+   ],
+   "altura": 100
+  },
+  {
+   "nome": "Bancada da varanda",
+   "retangulo": [
+    31,
+    1706,
+    107,
+    1829
+   ],
+   "altura": 90
+  }
+ ]
+}
