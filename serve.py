@@ -34,6 +34,11 @@ HEAD = (
     "</head>\n<body>\n"
 )
 
+
+def pagina():
+    """index.html com o esqueleto. Usado ao servir e no deploy do GitHub Pages (.github/workflows/pages.yml)."""
+    return HEAD + (SITE / "index.html").read_text(encoding="utf-8") + "\n</body>\n</html>\n"
+
 for ext, typ in {".ply": "application/octet-stream", ".spz": "application/octet-stream",
                  ".splat": "application/octet-stream", ".ksplat": "application/octet-stream",
                  ".usdz": "model/vnd.usdz+zip", ".glb": "model/gltf-binary", ".js": "text/javascript",
@@ -106,7 +111,7 @@ class Handler(SimpleHTTPRequestHandler):
                 return
             return self._json(404, {"error": "rota desconhecida"})
         if path in ("/", "/index.html"):
-            body = (HEAD + (SITE / "index.html").read_text(encoding="utf-8") + "\n</body>\n</html>\n").encode("utf-8")
+            body = pagina().encode("utf-8")
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.send_header("Content-Length", str(len(body)))
