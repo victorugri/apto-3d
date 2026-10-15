@@ -177,6 +177,12 @@
      1455,
      521,
      1554
+    ],
+    [
+     31,
+     1554,
+     537,
+     1581
     ]
    ]
   },
@@ -658,16 +664,6 @@
    ]
   },
   {
-   "nome": "Parede sala / cozinha",
-   "retangulo": [
-    521,
-    1554,
-    576,
-    1581
-   ],
-   "aberturas": []
-  },
-  {
    "nome": "Parede varanda / cozinha",
    "retangulo": [
     561,
@@ -710,16 +706,6 @@
    ]
   },
   {
-   "nome": "Parede sala / varanda",
-   "retangulo": [
-    31,
-    1554,
-    120,
-    1581
-   ],
-   "aberturas": []
-  },
-  {
    "nome": "Pilar",
    "retangulo": [
     0,
@@ -730,24 +716,7 @@
    "aberturas": []
   }
  ],
- "opcionais": [
-  {
-   "nome": "Porta de vidro entre sala e varanda",
-   "retangulo": [
-    120,
-    1554,
-    521,
-    1581
-   ],
-   "aberturas": [
-    {
-     "de": 120,
-     "ate": 521,
-     "tipo": "porta_vidro"
-    }
-   ]
-  }
- ],
+ "opcionais": [],
  "guarda_corpos": [
   {
    "nome": "Guarda-corpo",

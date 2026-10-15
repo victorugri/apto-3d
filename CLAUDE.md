@@ -47,7 +47,7 @@ Antes do escaneamento, o site já abre com uma maquete do apê montada a partir 
 do proprietário (Vista da Gávea, apartamento final 01, p.10; o final 02 é o mesmo espelhado, p.11).
 
 - `pipeline/planta_final01.json`: cômodos, paredes com aberturas (portas, portas de vidro, janelas), guarda-corpos,
-  móveis fixos e "opcionais" (hoje a porta de vidro entre sala e varanda, que o usuário pretende tirar).
+  móveis fixos e "opcionais" (hoje nenhum; a parede com porta de vidro entre sala e varanda já foi tirada, a varanda é integrada à sala).
   Coordenadas em cm, x para a direita e y para baixo, como no desenho. As áreas batem com as do manual
   (ex.: suíte 2 = 9,62 m², banhos = 3,38 m²), mas medidas de obra podem variar alguns cm.
 - `python pipeline/planta.py` gera `site/assets/planta-final01.glb`, `planta-final02.glb` e `planta.json`
